@@ -14,6 +14,8 @@ export default defineConfig([
     languageOptions: { globals: globals.browser },
   },
   tseslint.configs.recommended,
+  tseslint.configs.recommended,
+  tseslint.configs.stylistic,
   {
     files: ["**/*.json"],
     plugins: { json },

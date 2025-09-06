@@ -1,6 +1,6 @@
 import "./style.css";
 
-const canvas = document.querySelector<HTMLCanvasElement>("#worldCanvas");
+const canvas = document.querySelector<HTMLCanvasElement>("#canvas");
 
 if (canvas) {
   canvas.width = 800;
