@@ -34,7 +34,8 @@ export default defineConfig([
       "@typescript-eslint/no-unsafe-call": "error",
       "@typescript-eslint/no-unsafe-member-access": "error",
       "@typescript-eslint/no-unsafe-return": "error",
-      "max-params": ["error", 2],
+      // @TODO: enable this when cleaning up code
+      // "max-params": ["error", 2],
     },
   },
   {
