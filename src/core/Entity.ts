@@ -5,13 +5,14 @@ export class EntityManager {
   private activeEntities: EntityId[] = [];
 
   createEntity(): EntityId {
-    this.activeEntities.push(this.nextId++ as EntityId);
-    return this.nextId;
+    const id = this.nextId;
+    this.activeEntities.push(id);
+    return this.nextId++ as EntityId;
   }
 
   destroyEntity(entityId: EntityId): void {
     this.activeEntities = this.activeEntities.filter((e: EntityId) => {
-      return e === entityId;
+      return e !== entityId;
     });
   }
 

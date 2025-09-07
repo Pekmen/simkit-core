@@ -19,6 +19,10 @@ export class World {
     this.entityManager.destroyEntity(entityId);
   }
 
+  getEntityCount(): number {
+    return this.entityManager.getAllActiveEntities().length;
+  }
+
   addComponent<T>(
     entityId: EntityId,
     componentType: ComponentType<T>,
