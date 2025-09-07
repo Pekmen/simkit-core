@@ -1,6 +1,6 @@
 import type { EntityId } from "./Entity";
 
-export class ComponetStorage<T> {
+export class ComponentStorage<T> {
   private components = new Map<EntityId, T>();
 
   addComponent(entityId: EntityId, component: T): void {
