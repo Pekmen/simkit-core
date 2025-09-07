@@ -19,6 +19,10 @@ export class World {
     this.entityManager.destroyEntity(entityId);
   }
 
+  getEntityCount(): number {
+    return this.entityManager.getAllActiveEntities().length;
+  }
+
   addComponent<T>(
     entityId: EntityId,
     componentType: ComponentType<T>,
@@ -51,6 +55,20 @@ export class World {
     return (
       this.componentRegistry.get(componentType)?.hasComponent(entityId) ?? false
     );
+  }
+
+  updateComponent<T>(
+    entityId: EntityId,
+    componentType: ComponentType<T>,
+    updater: (component: T) => Partial<T>,
+  ): boolean {
+    const component = this.getComponent(entityId, componentType);
+    if (!component) return false;
+
+    const updates = updater(component);
+    const newComponent = { ...component, ...updates };
+    this.addComponent(entityId, componentType, newComponent);
+    return true;
   }
 
   addSystem(system: System): void {
