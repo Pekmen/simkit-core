@@ -1,10 +1,12 @@
 import { ComponentRegistry } from "./ComponentRegistry";
 import { EntityManager, type EntityId } from "./Entity";
 import type { ComponentType } from "./Component";
+import type { System } from "./System";
 
 export class World {
   private entityManager = new EntityManager();
   private componentRegistry = new ComponentRegistry();
+  private systems: System[] = [];
 
   createEntity(): EntityId {
     return this.entityManager.createEntity();
@@ -49,5 +51,15 @@ export class World {
     return (
       this.componentRegistry.get(componentType)?.hasComponent(entityId) ?? false
     );
+  }
+
+  addSystem(system: System): void {
+    this.systems.push(system);
+  }
+
+  update(deltaTime: number): void {
+    for (const system of this.systems) {
+      system.update(deltaTime);
+    }
   }
 }
