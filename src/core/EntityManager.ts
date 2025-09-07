@@ -15,4 +15,6 @@ export class EntityManager {
   getEntities(): Entity[] {
     return this.entities;
   }
+
+  aaaa;
 }
