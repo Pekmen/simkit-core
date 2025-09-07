@@ -1,17 +1,17 @@
-import { ComponentTypeSymbol, type ComponentType } from "./Component";
-import { ComponentStorage } from "./ComponentStorage";
+import { ComponentRegistry } from "./ComponentRegistry";
 import { EntityManager, type EntityId } from "./Entity";
+import type { ComponentType } from "./Component";
 
 export class World {
   private entityManager = new EntityManager();
-  private componentStorages = new Map<symbol, ComponentStorage<unknown>>();
+  private componentRegistry = new ComponentRegistry();
 
   createEntity(): EntityId {
     return this.entityManager.createEntity();
   }
 
   destroyEntity(entityId: EntityId): void {
-    for (const storage of this.componentStorages.values()) {
+    for (const storage of this.componentRegistry.values()) {
       storage.removeComponent(entityId);
     }
     this.entityManager.destroyEntity(entityId);
@@ -22,9 +22,8 @@ export class World {
     componentType: ComponentType<T>,
     data?: Partial<T>,
   ): void {
-    const storage = this.getOrCreateStorage(componentType);
+    const storage = this.componentRegistry.getOrCreate(componentType);
     const component = componentType.create(data);
-
     storage.addComponent(entityId, component);
   }
 
@@ -32,7 +31,7 @@ export class World {
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): boolean {
-    const storage = this.getStorage(componentType);
+    const storage = this.componentRegistry.get(componentType);
     return storage ? storage.removeComponent(entityId) : false;
   }
 
@@ -40,36 +39,15 @@ export class World {
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): T | undefined {
-    const storage = this.getStorage(componentType);
-    return storage?.getComponent(entityId);
+    return this.componentRegistry.get(componentType)?.getComponent(entityId);
   }
 
   hasComponent<T>(
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): boolean {
-    const storage = this.getStorage(componentType);
-    return storage ? storage.hasComponent(entityId) : false;
-  }
-
-  private getStorage<T>(
-    componentType: ComponentType<T>,
-  ): ComponentStorage<T> | undefined {
-    const symbol = componentType[ComponentTypeSymbol];
-    return this.componentStorages.get(symbol);
-  }
-
-  private getOrCreateStorage<T>(
-    componentType: ComponentType<T>,
-  ): ComponentStorage<T> {
-    const symbol = componentType[ComponentTypeSymbol];
-    let storage = this.componentStorages.get(symbol);
-
-    if (!storage) {
-      storage = new ComponentStorage<T>();
-      this.componentStorages.set(symbol, storage);
-    }
-
-    return storage;
+    return (
+      this.componentRegistry.get(componentType)?.hasComponent(entityId) ?? false
+    );
   }
 }
