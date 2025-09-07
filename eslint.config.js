@@ -8,7 +8,7 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   {
-    files: ["src/**/*.ts"],
+    files: ["**/*.ts"],
     plugins: { "@typescript-eslint": typescriptEslint },
     extends: [
       ...tseslint.configs.recommendedTypeChecked,
@@ -18,7 +18,9 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ["vitest.config.ts"],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
