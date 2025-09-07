@@ -26,6 +26,15 @@ export default defineConfig([
     },
     rules: {
       "@typescript-eslint/explicit-function-return-type": "error",
+      "@typescript-eslint/prefer-nullish-coalescing": "error",
+      "@typescript-eslint/restrict-plus-operands": "error",
+      "@typescript-eslint/unbound-method": "error",
+      "@typescript-eslint/no-unsafe-argument": "error",
+      "@typescript-eslint/no-unsafe-assignment": "error",
+      "@typescript-eslint/no-unsafe-call": "error",
+      "@typescript-eslint/no-unsafe-member-access": "error",
+      "@typescript-eslint/no-unsafe-return": "error",
+      "max-params": ["error", 2],
     },
   },
   {
