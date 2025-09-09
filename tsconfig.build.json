@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+<<<<<<< HEAD
     "outDir": "./dist",
     "rootDir": "./src",
     "noEmit": false,
@@ -8,6 +9,12 @@
     "declarationMap": true,
     "sourceMap": true
   },
+=======
+    "noEmit": false
+  },
+  "rootDir": "./src",
+  "outDir": "./dist",
+>>>>>>> ac1d203 (Sk-1-011: prepare publish to npm (#18))
   "include": ["src/**/*"],
   "exclude": [
     "node_modules",

@@ -1,6 +1,10 @@
 {
   "name": "@simkit/core",
+<<<<<<< HEAD
   "version": "0.1.0",
+=======
+  "version": "1.0.0",
+>>>>>>> ac1d203 (Sk-1-011: prepare publish to npm (#18))
   "description": "A lightweight, type-safe Entity-Component-System (ECS) library for TypeScript",
   "license": "MIT",
   "main": "dist/index.js",
@@ -29,17 +33,25 @@
   "author": "Milan Pekovic",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+<<<<<<< HEAD
     "prepublishOnly": "npm run test && npm run lint:fix",
     "lint": "eslint .",
+=======
+    "postinstall": "husky",
+>>>>>>> ac1d203 (Sk-1-011: prepare publish to npm (#18))
     "lint:fix": "eslint --fix .",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "test": "jest",
+<<<<<<< HEAD
     "test:watch": "jest --watch",
     "coverage": "jest --coverage",
     "clean": "rm -rf dist",
     "rebuild": "npm run clean && npm run build",
     "prepare": "husky"
+=======
+    "coverage": "jest --coverage"
+>>>>>>> ac1d203 (Sk-1-011: prepare publish to npm (#18))
   },
   "lint-staged": {
     "*.{js, jsx,ts,tsx}": [
