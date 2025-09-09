@@ -1,4 +1,3 @@
-import { describe, test, expect, beforeEach } from "vitest";
 import { ComponentRegistry } from "../core/ComponentRegistry";
 import { defineComponent, type ComponentType } from "../core/Component";
 import { ComponentStorage } from "../core/ComponentStorage";

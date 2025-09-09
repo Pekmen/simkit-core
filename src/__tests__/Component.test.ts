@@ -1,4 +1,3 @@
-import { describe, test, expect } from "vitest";
 import { defineComponent, type ComponentType } from "../core/Component";
 
 interface TestComponentA {
