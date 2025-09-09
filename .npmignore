@@ -1,0 +1,33 @@
+# Source files
+src/
+examples/
+coverage/
+
+# Development files
+*.config.js
+*.config.ts
+tsconfig*.json
+vitest.config.ts
+eslint.config.js
+
+# Development dependencies
+node_modules/
+yarn.lock
+
+# Development files
+.vscode/
+.idea/
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+**/__tests__/
+
+# Build artifacts (keep only dist/)
+.DS_Store
+*.log
+.env*
+
+# Git
+.git/
+.gitignore
