@@ -1,6 +1,6 @@
 import { ComponentRegistry } from "./ComponentRegistry";
 import { EntityManager, type EntityId } from "./Entity";
-import type { ComponentType } from "./Component";
+import type { ComponentType } from "./Component.js";
 import type { System } from "./System";
 
 export class World {

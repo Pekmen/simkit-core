@@ -8,6 +8,9 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   {
+    ignores: ["dist/**", "coverage/**", "node_modules/**"],
+  },
+  {
     files: ["**/*.ts"],
     plugins: { "@typescript-eslint": typescriptEslint },
     extends: [
@@ -19,7 +22,8 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: {
         projectService: {
-          allowDefaultProject: ["eslint.config.js"],
+          allowDefaultProject: ["eslint.config.js", "jest.config.ts"],
+          defaultProject: "./tsconfig.json",
         },
         tsconfigRootDir: import.meta.dirname,
       },
@@ -34,8 +38,6 @@ export default defineConfig([
       "@typescript-eslint/no-unsafe-call": "error",
       "@typescript-eslint/no-unsafe-member-access": "error",
       "@typescript-eslint/no-unsafe-return": "error",
-      // @TODO: enable this when cleaning up code
-      // "max-params": ["error", 2],
     },
   },
   {

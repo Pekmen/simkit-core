@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, test } from "vitest";
 import { defineComponent } from "../core/Component";
 import { World } from "../core/World";
 import { System } from "../core/System";
