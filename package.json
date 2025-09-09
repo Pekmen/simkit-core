@@ -1,8 +1,32 @@
 {
-  "name": "simkit",
-  "private": true,
-  "version": "0.1.0",
+  "name": "@simkit/core",
+  "version": "1.0.0",
+  "description": "A lightweight, type-safe Entity-Component-System (ECS) library for TypeScript",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "ecs",
+    "entity-component-system",
+    "typescript",
+    "game-development",
+    "simulation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pekmen/simkit-ecs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Pekmen/simkit-ecs/issues"
+  },
+  "homepage": "https://github.com/Pekmen/simkit-ecs#readme",
+  "author": "Milan Pekovic",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "postinstall": "husky",
