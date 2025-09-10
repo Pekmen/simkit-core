@@ -19,6 +19,10 @@ export class World {
     this.entityManager.destroyEntity(entityId);
   }
 
+  getAllEntities(): EntityId[] {
+    return this.entityManager.getAllActiveEntities();
+  }
+
   getEntityCount(): number {
     return this.entityManager.getAllActiveEntities().length;
   }
