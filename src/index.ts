@@ -1,6 +1,6 @@
-export { World } from "./core/World";
-export { System } from "./core/System";
-export { defineComponent, type ComponentType } from "./core/Component";
-export { ComponentStorage } from "./core/ComponentStorage";
-export { ComponentRegistry } from "./core/ComponentRegistry";
-export { EntityManager, type EntityId } from "./core/Entity";
+export { World } from "./core/World.js";
+export { System } from "./core/System.js";
+export { defineComponent, type ComponentType } from "./core/Component.js";
+export { ComponentStorage } from "./core/ComponentStorage.js";
+export { ComponentRegistry } from "./core/ComponentRegistry.js";
+export { EntityManager, type EntityId } from "./core/Entity.js";

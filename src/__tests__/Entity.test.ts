@@ -1,4 +1,4 @@
-import { EntityManager, type EntityId } from "../core/Entity";
+import { EntityManager, type EntityId } from "../core/Entity.js";
 
 describe("EntityManager", () => {
   let manager: EntityManager;

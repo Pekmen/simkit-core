@@ -6,7 +6,7 @@
     "lib": ["ES2020"],
     "skipLibCheck": true,
 
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "moduleDetection": "force",
