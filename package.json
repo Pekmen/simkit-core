@@ -1,5 +1,5 @@
 {
-  "name": "@simkit/core",
+  "name": "simkit-core",
   "version": "0.1.0",
   "description": "A lightweight, type-safe Entity-Component-System (ECS) library for TypeScript",
   "license": "MIT",
