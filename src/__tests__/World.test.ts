@@ -40,6 +40,19 @@ describe("World", () => {
     expect(world.getEntityCount()).toBe(0);
   });
 
+  test("getAllEntities returns same entities as tracked by entity count", () => {
+    const entity1 = world.createEntity();
+    world.createEntity();
+
+    expect(world.getAllEntities().length).toBe(world.getEntityCount());
+    expect(world.getAllEntities().length).toBe(2);
+
+    world.destroyEntity(entity1);
+
+    expect(world.getAllEntities().length).toBe(world.getEntityCount());
+    expect(world.getAllEntities().length).toBe(1);
+  });
+
   test("add and retrieve components", () => {
     const entity = world.createEntity();
     world.addComponent(entity, TestComponentAType, { foo: "test" });
