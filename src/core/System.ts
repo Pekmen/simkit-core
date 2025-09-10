@@ -1,4 +1,4 @@
-import type { World } from "./World";
+import type { World } from "./World.js";
 
 export abstract class System {
   protected world: World;

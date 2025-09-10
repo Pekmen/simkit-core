@@ -1,5 +1,5 @@
-import { ComponentStorage } from "./ComponentStorage";
-import { type ComponentType } from "./Component";
+import { ComponentStorage } from "./ComponentStorage.js";
+import { type ComponentType } from "./Component.js";
 
 export class ComponentRegistry {
   private storages = new Map<

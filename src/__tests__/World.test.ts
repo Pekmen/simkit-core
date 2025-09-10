@@ -1,6 +1,6 @@
-import { defineComponent } from "../core/Component";
-import { World } from "../core/World";
-import { System } from "../core/System";
+import { defineComponent } from "../core/Component.js";
+import { World } from "../core/World.js";
+import { System } from "../core/System.js";
 
 interface TestComponentA {
   foo: string;
