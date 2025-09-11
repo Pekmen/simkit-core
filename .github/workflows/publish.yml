@@ -14,8 +14,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -29,40 +27,28 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Update package.json with release tag
-        id: update_version
+      - name: Prepare version update
+        id: prepare_version
         run: |
+          # Extract the version from the release tag, removing the 'v' prefix if it exists.
           TAG="${{ github.event.release.tag_name }}"
-          # Strip the 'v' prefix if it exists, as npm doesn't use it.
           VERSION=${TAG#v}
           echo "Updating package.json version to $VERSION"
           npm version "$VERSION" --no-git-tag-version
-
-      - name: Create branch for version update
-        id: create_branch
-        run: |
-          VERSION=${{ steps.update_version.outputs.VERSION }}
-          BRANCH_NAME="chore/release-version-${{ github.event.release.tag_name }}"
-          echo "NEW_BRANCH=$BRANCH_NAME" >> $GITHUB_ENV
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git checkout -b "$BRANCH_NAME"
-          git add package.json package-lock.json
-          git commit -m "Update package.json to version ${{ github.event.release.tag_name }}"
-          git push origin "$BRANCH_NAME"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create pull request for version update
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: Update package.json to version ${{ github.event.release.tag_name }}"
-          branch: ${{ env.NEW_BRANCH }}
+          branch: "chore/release-version-${{ github.event.release.tag_name }}"
           base: ${{ github.event.repository.default_branch }}
-          title: " chore: Update version for release ${{ github.event.release.tag_name }}"
+          title: "chore: Update version for release ${{ github.event.release.tag_name }}"
           body: |
             This PR automatically updates the package version to match the new release tag.
+
+      - name: Run build (if needed)
+        run: npm run build || echo "No build script found, skipping."
 
       - name: Publish to npm
         run: npm publish --access public --provenance
