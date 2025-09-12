@@ -60,6 +60,7 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          base: ${{ github.event.repository.default_branch }}
           commit-message: "chore: bump version to ${{ steps.extract_version.outputs.version }}"
           title: "Release v${{ steps.extract_version.outputs.version }}"
           body: |
