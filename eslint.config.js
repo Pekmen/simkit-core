@@ -22,7 +22,7 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: {
         projectService: {
-          allowDefaultProject: ["eslint.config.js", "jest.config.ts"],
+          allowDefaultProject: ["eslint.config.js"],
           defaultProject: "./tsconfig.json",
         },
         tsconfigRootDir: import.meta.dirname,
