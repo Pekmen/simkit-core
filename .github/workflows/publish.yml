@@ -30,6 +30,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Run build (if needed)
+        run: npm run build || echo "No build script found, skipping."
+
       - name: Update package.json with release tag
         id: prepare_version
         run: |
@@ -66,20 +69,25 @@ jobs:
           body: |
             This PR automatically updates the package version to match the new release tag.
 
-      - name: Run build (if needed)
-        run: npm run build || echo "No build script found, skipping."
-
       - name: Debug package info before publish
         run: |
-          echo "Package.json version before publish:"
+          echo "=== FINAL PRE-PUBLISH VERIFICATION ==="
+          echo "Release tag: ${{ github.event.release.tag_name }}"
+          echo "Expected version: ${{ steps.prepare_version.outputs.version }}"
+          echo ""
+          echo "Package.json version (multiple checks):"
+          echo "1. Via node require:"
           node -p "require('./package.json').version"
-          echo "Package.json name:"
-          node -p "require('./package.json').name"
-          echo "Working directory:"
+          echo "2. Via grep:"
+          cat package.json | grep '"version"'
+          echo "3. Via npm pkg get:"
+          npm pkg get version
+          echo ""
+          echo "Working directory and files:"
           pwd
-          echo "Files in current directory:"
-          ls -la
-          echo "Full package info that will be published:"
+          ls -la package.json
+          echo ""
+          echo "What npm will publish (dry run):"
           npm pack --dry-run
 
       - name: Verify npm authentication
