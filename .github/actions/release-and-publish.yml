@@ -31,8 +31,12 @@ jobs:
       - name: Extract version from tag
         id: extract_version
         run: |
-          # Get the tag name from the release
-          TAG_NAME="${{ github.event.release.tag_name }}"
+          # Get the tag name from the release or manual input
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_NAME="${{ github.event.inputs.tag_name }}"
+          else
+            TAG_NAME="${{ github.event.release.tag_name }}"
+          fi
           # Remove 'v' prefix if present (e.g., v1.2.3 -> 1.2.3)
           VERSION=${TAG_NAME#v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
