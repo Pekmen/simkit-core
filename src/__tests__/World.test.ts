@@ -1,7 +1,6 @@
-import { beforeEach, describe, expect, test } from "vitest";
-import { defineComponent } from "../core/Component";
-import { World } from "../core/World";
-import { System } from "../core/System";
+import { defineComponent } from "../core/Component.js";
+import { World } from "../core/World.js";
+import { System } from "../core/System.js";
 
 interface TestComponentA {
   foo: string;
@@ -39,6 +38,19 @@ describe("World", () => {
 
     world.destroyEntity(entity);
     expect(world.getEntityCount()).toBe(0);
+  });
+
+  test("getAllEntities returns same entities as tracked by entity count", () => {
+    const entity1 = world.createEntity();
+    world.createEntity();
+
+    expect(world.getAllEntities().length).toBe(world.getEntityCount());
+    expect(world.getAllEntities().length).toBe(2);
+
+    world.destroyEntity(entity1);
+
+    expect(world.getAllEntities().length).toBe(world.getEntityCount());
+    expect(world.getAllEntities().length).toBe(1);
   });
 
   test("add and retrieve components", () => {
