@@ -20,12 +20,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Pekmen/simkit-ecs.git"
+    "url": "git+https://github.com/Pekmen/simkit-core.git"
   },
   "bugs": {
-    "url": "https://github.com/Pekmen/simkit-ecs/issues"
+    "url": "https://github.com/Pekmen/simkit-core/issues"
   },
-  "homepage": "https://github.com/Pekmen/simkit-ecs#readme",
+  "homepage": "https://github.com/Pekmen/simkit-core#readme",
   "author": "Milan Pekovic",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
