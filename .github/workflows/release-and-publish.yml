@@ -45,20 +45,51 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
-          # Determine if this is a major or minor release
-          IFS='.' read -ra VERSION_PARTS <<< "$VERSION"
-          MAJOR=${VERSION_PARTS[0]}
-          MINOR=${VERSION_PARTS[1]}
-          PATCH=${VERSION_PARTS[2]}
+          # Parse current version
+          IFS='.' read -ra CURRENT_VERSION <<< "$VERSION"
+          CURRENT_MAJOR=${CURRENT_VERSION[0]}
+          CURRENT_MINOR=${CURRENT_VERSION[1]}
+          CURRENT_PATCH=${CURRENT_VERSION[2]}
 
-          # Check if patch version is 0 (indicating major or minor release)
-          if [ "$PATCH" = "0" ]; then
+          echo "Current version: ${CURRENT_MAJOR}.${CURRENT_MINOR}.${CURRENT_PATCH}"
+
+          # Get the previous release (excluding the current one)
+          PREVIOUS_TAG=$(gh release list --limit 50 --json tagName,createdAt --jq '
+            map(select(.tagName != "'$TAG_NAME'")) | 
+            sort_by(.createdAt) | 
+            reverse | 
+            .[0].tagName
+          ')
+
+          if [ -z "$PREVIOUS_TAG" ] || [ "$PREVIOUS_TAG" = "null" ]; then
+            echo "No previous release found, treating as major release"
             echo "is_major_minor=true" >> $GITHUB_OUTPUT
-            echo "This is a major or minor release"
           else
-            echo "is_major_minor=false" >> $GITHUB_OUTPUT
-            echo "This is a patch release"
+            echo "Previous release: $PREVIOUS_TAG"
+            
+            # Remove 'v' prefix from previous tag
+            PREVIOUS_VERSION=${PREVIOUS_TAG#v}
+            
+            # Parse previous version
+            IFS='.' read -ra PREV_VERSION <<< "$PREVIOUS_VERSION"
+            PREV_MAJOR=${PREV_VERSION[0]}
+            PREV_MINOR=${PREV_VERSION[1]}
+            PREV_PATCH=${PREV_VERSION[2]}
+            
+            echo "Previous version: ${PREV_MAJOR}.${PREV_MINOR}.${PREV_PATCH}"
+            
+            # Compare major and minor versions
+            if [ "$CURRENT_MAJOR" -gt "$PREV_MAJOR" ] || 
+               [ "$CURRENT_MAJOR" -eq "$PREV_MAJOR" ] && [ "$CURRENT_MINOR" -gt "$PREV_MINOR" ]; then
+              echo "Major or minor version increased - triggering benchmarks"
+              echo "is_major_minor=true" >> $GITHUB_OUTPUT
+            else
+              echo "Only patch version changed - skipping benchmarks"
+              echo "is_major_minor=false" >> $GITHUB_OUTPUT
+            fi
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update package.json version
         run: |
