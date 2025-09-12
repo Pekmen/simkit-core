@@ -11,7 +11,7 @@ It allows you to create entities, attach components, define systems, and run sim
 Clone the repository:
 
 ```bash
-git clone git@github.com:Pekmen/simkit-ecs.git
+git clone git@github.com:Pekmen/simkit-core.git
 ```
 
 Then import modules directly from the `src` folder:
