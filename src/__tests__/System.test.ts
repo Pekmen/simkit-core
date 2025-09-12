@@ -1,6 +1,5 @@
-import { describe, test, expect, beforeEach } from "vitest";
-import { System } from "../core/System";
-import { World } from "../core/World";
+import { System } from "../core/System.js";
+import { World } from "../core/World.js";
 
 class TestSystem extends System {
   updateCalls = 0;

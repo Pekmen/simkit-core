@@ -51,12 +51,4 @@ const movementSystem = new MovementSystem(world);
 world.addSystem(movementSystem);
 
 // Run an update loop
-console.log("Before update:");
-console.log(world.getComponent(player, PositionComponent));
-console.log(world.getComponent(enemy, PositionComponent));
-
 world.update(1); // 1 time unit
-
-console.log("After update:");
-console.log(world.getComponent(player, PositionComponent));
-console.log(world.getComponent(enemy, PositionComponent));

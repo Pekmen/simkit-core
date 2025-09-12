@@ -1,5 +1,4 @@
-import { describe, test, expect } from "vitest";
-import { defineComponent, type ComponentType } from "../core/Component";
+import { ComponentType, defineComponent } from "../core/Component.js";
 
 interface TestComponentA {
   foo: string;

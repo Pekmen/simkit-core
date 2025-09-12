@@ -1,6 +1,5 @@
-import { describe, test, expect, beforeEach } from "vitest";
-import { ComponentStorage } from "../core/ComponentStorage";
-import { World } from "../core/World";
+import { ComponentStorage } from "../core/ComponentStorage.js";
+import { World } from "../core/World.js";
 
 interface TestComponent {
   foo: string;

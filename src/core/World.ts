@@ -1,7 +1,7 @@
-import { ComponentRegistry } from "./ComponentRegistry";
-import { EntityManager, type EntityId } from "./Entity";
-import type { ComponentType } from "./Component";
-import type { System } from "./System";
+import { ComponentRegistry } from "./ComponentRegistry.js";
+import { EntityManager, type EntityId } from "./Entity.js";
+import type { ComponentType } from "./Component.js";
+import type { System } from "./System.js";
 
 export class World {
   private entityManager = new EntityManager();
@@ -17,6 +17,10 @@ export class World {
       storage.removeComponent(entityId);
     }
     this.entityManager.destroyEntity(entityId);
+  }
+
+  getAllEntities(): EntityId[] {
+    return this.entityManager.getAllActiveEntities();
   }
 
   getEntityCount(): number {

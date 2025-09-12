@@ -1,5 +1,5 @@
-import { ComponentStorage } from "./ComponentStorage";
-import { type ComponentType } from "./Component";
+import { ComponentStorage } from "./ComponentStorage.js";
+import { type ComponentType } from "./Component.js";
 
 export class ComponentRegistry {
   private storages = new Map<
@@ -8,18 +8,17 @@ export class ComponentRegistry {
   >();
 
   get<T>(componentType: ComponentType<T>): ComponentStorage<T> | undefined {
-    return this.storages.get(componentType) as ComponentStorage<T> | undefined;
+    const storage = this.storages.get(componentType);
+    return storage as ComponentStorage<T> | undefined;
   }
 
   getOrCreate<T>(componentType: ComponentType<T>): ComponentStorage<T> {
-    let storage = this.storages.get(componentType) as
-      | ComponentStorage<T>
-      | undefined;
+    let storage = this.storages.get(componentType);
     if (!storage) {
       storage = new ComponentStorage<T>();
       this.storages.set(componentType, storage);
     }
-    return storage;
+    return storage as ComponentStorage<T>;
   }
 
   values(): IterableIterator<ComponentStorage<unknown>> {

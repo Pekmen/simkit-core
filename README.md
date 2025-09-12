@@ -1,166 +1,178 @@
-# SimKit ECS Library
+# simkit-core
 
-A **lightweight, type-safe Entity-Component-System (ECS) library** for TypeScript.
+A lightweight, type-safe Entity-Component-System (ECS) library for TypeScript
 
-It allows you to create entities, attach components, define systems, and run simulations in a structured and type-safe way.
+## Installation
 
----
-
-## Getting Started
-
-Clone the repository:
+### Using npm
 
 ```bash
-git clone git@github.com:Pekmen/simkit-ecs.git
+npm install simkit-core
 ```
 
-Then import modules directly from the `src` folder:
+### Using yarn
 
-```ts
-import { World, defineComponent, System } from "./src/core";
+```bash
+yarn add simkit-core
 ```
 
----
+### Using pnpm
 
-## Components
+```bash
+pnpm add simkit-core
+```
 
-Define components with `defineComponent`. Components hold data for your entities.
+### From GitHub
 
-```ts
-import { defineComponent } from "./src/core";
+```bash
+npm install github:Pekmen/simkit-core
+```
 
+### Development Installation
+
+If you want to contribute or run the examples:
+
+```bash
+# Clone the repository
+git clone https://github.com/Pekmen/simkit-core.git
+cd simkit-core
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Build the library
+npm run build
+
+# Run the example
+npm run start examples/basic.ts
+```
+
+## Features
+
+- 🚀 **High Performance**: Optimized for game development and simulations
+- 🔒 **Type Safe**: Full TypeScript support with type inference
+- 🧩 **Simple API**: Easy to learn and use
+- 🔧 **Flexible**: Supports complex component relationships
+- 📦 **Lightweight**: Minimal dependencies and small bundle size
+
+## Quick Start
+
+```typescript
+import { World, System, defineComponent } from "simkit-core";
+
+// Define components
 interface Position {
   x: number;
   y: number;
 }
+
 interface Velocity {
   dx: number;
   dy: number;
 }
 
-const PositionComponent = defineComponent<Position>("Position", { x: 0, y: 0 });
-const VelocityComponent = defineComponent<Velocity>("Velocity", {
-  dx: 0,
-  dy: 0,
-});
-```
+const Position = defineComponent<Position>("Position", { x: 0, y: 0 });
+const Velocity = defineComponent<Velocity>("Velocity", { dx: 0, dy: 0 });
 
-- **`create(data?)`** returns a component object, merging defaults with optional overrides.
-
----
-
-## Entities
-
-Create entities and attach components via the `World`.
-
-```ts
-import { World } from "./src/core";
-
-const world = new World();
-const player = world.createEntity();
-world.addComponent(player, PositionComponent, { x: 5, y: 5 });
-world.addComponent(player, VelocityComponent, { dx: 1, dy: 1 });
-```
-
-- `createEntity()` → returns a unique `EntityId`.
-- `destroyEntity(entityId)` → removes the entity and its components.
-
----
-
-## Systems
-
-Define logic by extending `System`. Systems update entities each frame.
-
-```ts
-import { System } from "./src/core";
-
+// Create a system
 class MovementSystem extends System {
-  update(deltaTime: number) {
-    for (const entity of [player]) {
-      const pos = this.world.getComponent(entity, PositionComponent);
-      const vel = this.world.getComponent(entity, VelocityComponent);
+  update(deltaTime: number): void {
+    const entities = this.world.getAllEntities();
+
+    for (const entity of entities) {
+      const pos = this.world.getComponent(entity, Position);
+      const vel = this.world.getComponent(entity, Velocity);
+
       if (pos && vel) {
         pos.x += vel.dx * deltaTime;
         pos.y += vel.dy * deltaTime;
-        this.world.updateComponent(entity, PositionComponent, () => pos);
+        this.world.updateComponent(entity, Position, () => pos);
       }
     }
   }
 }
 
+// Create world and add system
+const world = new World();
 world.addSystem(new MovementSystem(world));
+
+// Create entities
+const player = world.createEntity();
+world.addComponent(player, Position, { x: 0, y: 0 });
+world.addComponent(player, Velocity, { dx: 1, dy: 1 });
+
+// Run the simulation
+world.update(16); // 16ms delta time
 ```
 
-- `update(deltaTime)` is called every simulation tick.
-- Access components through the world, update safely.
+## API Reference
 
----
+### World
 
-## Updating Components
+The main ECS container that manages entities, components, and systems.
 
-Read and modify components using `getComponent` and `updateComponent`.
+```typescript
+const world = new World();
 
-```ts
-const pos = world.getComponent(player, PositionComponent);
-if (pos) {
-  pos.x += 10;
-  world.updateComponent(player, PositionComponent, () => pos);
+// Entity management
+const entity = world.createEntity();
+world.destroyEntity(entity);
+world.getAllEntities();
+world.getEntityCount();
+
+// Component management
+world.addComponent(entity, ComponentType, data);
+world.removeComponent(entity, ComponentType);
+world.getComponent(entity, ComponentType);
+world.hasComponent(entity, ComponentType);
+world.updateComponent(entity, ComponentType, updater);
+
+// System management
+world.addSystem(system);
+world.update(deltaTime);
+```
+
+### defineComponent
+
+Creates a component type with default values and type safety.
+
+```typescript
+interface Health {
+  current: number;
+  max: number;
+}
+
+const Health = defineComponent<Health>("Health", {
+  current: 100,
+  max: 100,
+});
+
+// Usage
+world.addComponent(entity, Health, { current: 80 }); // max will be 100
+```
+
+### System
+
+Base class for creating systems that operate on entities and components.
+
+```typescript
+class HealthSystem extends System {
+  update(deltaTime: number): void {
+    const entities = this.world.getAllEntities();
+
+    for (const entity of entities) {
+      const health = this.world.getComponent(entity, Health);
+      if (health && health.current <= 0) {
+        this.world.destroyEntity(entity);
+      }
+    }
+  }
 }
 ```
 
-- `updateComponent` returns `false` if the component does not exist.
+## License
 
----
-
-## Removing Components
-
-```ts
-world.removeComponent(player, VelocityComponent); // returns true if removed
-world.removeComponent(player, VelocityComponent); // returns false if not present
-```
-
----
-
-## Running the Simulation
-
-```ts
-console.log("Before update:", world.getComponent(player, PositionComponent));
-world.update(1); // advance 1 time unit
-console.log("After update:", world.getComponent(player, PositionComponent));
-```
-
----
-
-## Example Usage
-
-You can see full runnable examples in the `examples/` folder:
-
-- `examples/basic.ts` — basic creation, components, systems, and updates.
-
----
-
-## API Overview
-
-| Class / Function                  | Description                                    |
-| --------------------------------- | ---------------------------------------------- |
-| `World`                           | Manages entities, components, and systems.     |
-| `System`                          | Base class for game logic systems.             |
-| `ComponentStorage`                | Internal storage for a single component type.  |
-| `ComponentRegistry`               | Tracks all component storages.                 |
-| `defineComponent(name, defaults)` | Defines a typed component with default values. |
-
-**World Methods**
-
-- `createEntity(): EntityId`
-- `destroyEntity(entityId: EntityId): void`
-- `addComponent(entityId, componentType, data?)`
-- `removeComponent(entityId, componentType)`
-- `getComponent(entityId, componentType)`
-- `updateComponent(entityId, componentType, updater)`
-- `hasComponent(entityId, componentType)`
-- `addSystem(system: System)`
-- `update(deltaTime: number)`
-
----
-
-This README provides everything a user needs to **start using SimKit ECS**, including components, entities, systems, updates, and example references.
+MIT

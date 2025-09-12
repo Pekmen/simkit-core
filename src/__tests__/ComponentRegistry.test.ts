@@ -1,8 +1,7 @@
-import { describe, test, expect, beforeEach } from "vitest";
-import { ComponentRegistry } from "../core/ComponentRegistry";
-import { defineComponent, type ComponentType } from "../core/Component";
-import { ComponentStorage } from "../core/ComponentStorage";
-import { World } from "../core/World";
+import { ComponentRegistry } from "../core/ComponentRegistry.js";
+import { defineComponent, type ComponentType } from "../core/Component.js";
+import { ComponentStorage } from "../core/ComponentStorage.js";
+import { World } from "../core/World.js";
 
 interface TestComponentA {
   foo: string;
