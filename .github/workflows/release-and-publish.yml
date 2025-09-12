@@ -1,0 +1,147 @@
+name: Release and Publish
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  release-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          # Get the tag name from the release or manual input
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_NAME="${{ github.event.inputs.tag_name }}"
+          else
+            TAG_NAME="${{ github.event.release.tag_name }}"
+          fi
+          # Remove 'v' prefix if present (e.g., v1.2.3 -> 1.2.3)
+          VERSION=${TAG_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Update package.json version
+        run: |
+          npm version ${{ steps.extract_version.outputs.version }} --no-git-tag-version
+          echo "Updated package.json to version ${{ steps.extract_version.outputs.version }}"
+
+      - name: Run tests and linting
+        run: |
+          npm run test
+          npm run lint:fix
+
+      - name: Build package
+        run: npm run build
+
+      - name: Create Pull Request
+        id: create_pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: ${{ github.event.repository.default_branch }}
+          commit-message: "chore: bump version to ${{ steps.extract_version.outputs.version }}"
+          title: "Release v${{ steps.extract_version.outputs.version }}"
+          body: |
+            ## Release v${{ steps.extract_version.outputs.version }}
+
+            This PR updates the package version to match the GitHub release tag.
+
+            ### Changes
+            - Updated `package.json` version to `${{ steps.extract_version.outputs.version }}`
+            - Built and tested the package
+
+            ### Release Notes
+            ${{ github.event.release.body }}
+
+            This PR was automatically created by the release workflow.
+          branch: release/v${{ steps.extract_version.outputs.version }}
+          branch-suffix: timestamp
+          delete-branch: true
+          labels: |
+            release
+            automated
+
+      - name: Auto-merge Pull Request
+        if: steps.create_pr.outputs.pull-request-number
+        run: |
+          # Wait a moment for PR to be fully created
+          sleep 5
+          # Enable auto-merge on the PR
+          gh pr merge ${{ steps.create_pr.outputs.pull-request-number }} --squash --auto
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for PR to be merged
+        if: steps.create_pr.outputs.pull-request-number
+        run: |
+          echo "Waiting for PR to be merged..."
+          PR_NUMBER="${{ steps.create_pr.outputs.pull-request-number }}"
+
+          # Wait up to 5 minutes for the PR to be merged
+          for i in {1..30}; do
+            PR_STATE=$(gh pr view $PR_NUMBER --json state --jq '.state')
+            if [ "$PR_STATE" = "MERGED" ]; then
+              echo "PR has been merged successfully"
+              break
+            elif [ "$PR_STATE" = "CLOSED" ]; then
+              echo "PR was closed without merging"
+              exit 1
+            else
+              echo "PR is still $PR_STATE, waiting... (attempt $i/30)"
+              sleep 10
+            fi
+          done
+
+          # Final check
+          PR_STATE=$(gh pr view $PR_NUMBER --json state --jq '.state')
+          if [ "$PR_STATE" != "MERGED" ]; then
+            echo "PR was not merged within the timeout period"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout main branch with latest changes
+        run: |
+          git fetch origin
+          git checkout main
+          git pull origin main
+
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Update release with published info
+        run: |
+          gh release edit ${{ github.event.release.tag_name }} --notes "${{ github.event.release.body }}
+
+          ---
+
+          📦 **Package published to npm**: \`npm install ${{ github.event.repository.name }}@${{ steps.extract_version.outputs.version }}\`
+
+          🔗 **npm package**: https://www.npmjs.com/package/${{ github.event.repository.name }}/v/${{ steps.extract_version.outputs.version }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
