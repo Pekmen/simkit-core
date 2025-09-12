@@ -11,6 +11,9 @@ jobs:
       contents: write
       pull-requests: write
       packages: write
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+      is_major_minor: ${{ steps.extract_version.outputs.is_major_minor }}
 
     steps:
       - name: Checkout repository
@@ -41,13 +44,13 @@ jobs:
           VERSION=${TAG_NAME#v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
-          
+
           # Determine if this is a major or minor release
           IFS='.' read -ra VERSION_PARTS <<< "$VERSION"
           MAJOR=${VERSION_PARTS[0]}
           MINOR=${VERSION_PARTS[1]}
           PATCH=${VERSION_PARTS[2]}
-          
+
           # Check if patch version is 0 (indicating major or minor release)
           if [ "$PATCH" = "0" ]; then
             echo "is_major_minor=true" >> $GITHUB_OUTPUT
@@ -107,17 +110,6 @@ jobs:
           gh pr merge ${{ steps.create_pr.outputs.pull-request-number }} --squash --auto
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # Run benchmarks after successful publish (only for major/minor releases)
-  trigger-benchmarks:
-    needs: release-and-publish
-    if: needs.release-and-publish.outputs.is_major_minor == 'true'
-    uses: ./.github/workflows/trigger-benchmark.yml
-    with:
-      version: ${{ needs.release-and-publish.outputs.version }}
-      is_major_minor: ${{ needs.release-and-publish.outputs.is_major_minor == 'true' }}
-    secrets:
-      BENCHMARK_REPO_TOKEN: ${{ secrets.BENCHMARK_REPO_TOKEN }}
 
       - name: Wait for PR to be merged
         if: steps.create_pr.outputs.pull-request-number
@@ -182,9 +174,3 @@ jobs:
       is_major_minor: ${{ needs.release-and-publish.outputs.is_major_minor == 'true' }}
     secrets:
       BENCHMARK_REPO_TOKEN: ${{ secrets.BENCHMARK_REPO_TOKEN }}
-
-    # Add outputs to main job
-  release-and-publish:
-    outputs:
-      version: ${{ steps.extract_version.outputs.version }}
-      is_major_minor: ${{ steps.extract_version.outputs.is_major_minor }}
