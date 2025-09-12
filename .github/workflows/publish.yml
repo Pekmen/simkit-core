@@ -36,8 +36,24 @@ jobs:
           # Extract the version from the release tag, removing the 'v' prefix if it exists.
           TAG="${{ github.event.release.tag_name }}"
           VERSION=${TAG#v}
-          echo "Updating package.json version to $VERSION"
-          npm version "$VERSION" --no-git-tag-version
+          echo "Release tag: $TAG"
+          echo "Extracted version: $VERSION"
+          echo "Current package.json version before update:"
+          node -p "require('./package.json').version"
+
+          # More explicit version update
+          npm pkg set version="$VERSION"
+
+          # Verify the update worked
+          UPDATED_VERSION=$(node -p "require('./package.json').version")
+          echo "Confirmed updated version: $UPDATED_VERSION"
+
+          if [ "$UPDATED_VERSION" != "$VERSION" ]; then
+            echo "ERROR: Version update failed!"
+            exit 1
+          fi
+
+          echo "Successfully updated package.json to version $VERSION"
 
       - name: Create pull request for version update
         uses: peter-evans/create-pull-request@v6
@@ -52,6 +68,24 @@ jobs:
 
       - name: Run build (if needed)
         run: npm run build || echo "No build script found, skipping."
+
+      - name: Debug package info before publish
+        run: |
+          echo "Package.json version before publish:"
+          node -p "require('./package.json').version"
+          echo "Package.json name:"
+          node -p "require('./package.json').name"
+          echo "Working directory:"
+          pwd
+          echo "Files in current directory:"
+          ls -la
+          echo "Full package info that will be published:"
+          npm pack --dry-run
+
+      - name: Verify npm authentication
+        run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to npm
         run: npm publish --access public --provenance
