@@ -29,7 +29,9 @@
   "author": "Milan Pekovic",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "rebuild": "npm run clean && npm run build",
     "prepublishOnly": "npm run test && npm run lint:fix",
+    "clean": "rm -rf dist",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "format": "prettier --check .",
@@ -38,8 +40,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage",
-    "clean": "rm -rf dist",
-    "rebuild": "npm run clean && npm run build",
+    "benchmark:update-readme": "node benchmarks/update-readme.js",
     "prepare": "husky"
   },
   "lint-staged": {
