@@ -1,0 +1,13 @@
+{
+  "version": "0.26.0",
+  "timestamp": "2025-09-12T21:44:08.157Z",
+  "results": {
+    "packed_5": 1635,
+    "simple_iter": 487,
+    "frag_iter": 2564,
+    "entity_cycle": 114,
+    "add_remove": 6311
+  },
+  "node_version": "v22.19.0",
+  "os": "linux"
+}
