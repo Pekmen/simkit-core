@@ -168,6 +168,8 @@ jobs:
   trigger-benchmarks:
     needs: release-and-publish
     if: needs.release-and-publish.outputs.is_major_minor == 'true'
+    permissions:
+      contents: write
     uses: ./.github/workflows/trigger-benchmark.yml
     with:
       version: ${{ needs.release-and-publish.outputs.version }}
