@@ -108,6 +108,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Run benchmarks after successful publish (only for major/minor releases)
+  trigger-benchmarks:
+    needs: release-and-publish
+    if: needs.release-and-publish.outputs.is_major_minor == 'true'
+    uses: ./.github/workflows/trigger-benchmark.yml
+    with:
+      version: ${{ needs.release-and-publish.outputs.version }}
+      is_major_minor: ${{ needs.release-and-publish.outputs.is_major_minor == 'true' }}
+    secrets:
+      BENCHMARK_REPO_TOKEN: ${{ secrets.BENCHMARK_REPO_TOKEN }}
+
       - name: Wait for PR to be merged
         if: steps.create_pr.outputs.pull-request-number
         run: |
