@@ -164,7 +164,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Run benchmarks after successful publish (only for major/minor releases)
   trigger-benchmarks:
     needs: release-and-publish
     if: needs.release-and-publish.outputs.is_major_minor == 'true'
