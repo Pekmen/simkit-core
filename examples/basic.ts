@@ -1,6 +1,6 @@
-import { defineComponent } from "../src/core/Component";
-import { System } from "../src/core/System";
-import { World } from "../src/core/World";
+import { defineComponent } from "../src/core/Component.js";
+import { System } from "../src/core/System.js";
+import { World } from "../src/core/World.js";
 
 // Define components
 interface Position {

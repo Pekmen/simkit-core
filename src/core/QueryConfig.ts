@@ -1,5 +1,5 @@
-import { ComponentType } from "..";
-import { EntityId } from "./Entity";
+import { ComponentType } from "./Component.js";
+import { EntityId } from "./Entity.js";
 
 export interface QueryConfig {
   with?: ComponentType<unknown>[];

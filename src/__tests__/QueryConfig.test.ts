@@ -1,5 +1,5 @@
-import { defineComponent } from "../core/Component";
-import { validateQueryConfig } from "../core/QueryConfig";
+import { defineComponent } from "../core/Component.js";
+import { validateQueryConfig } from "../core/QueryConfig.js";
 
 describe("QueryConfig", () => {
   const ComponentA = defineComponent("ComponentA", { foo: "x" });

@@ -2,11 +2,11 @@
   "compilerOptions": {
     "target": "ES2024",
     "useDefineForClassFields": true,
-    "module": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "lib": ["ES2024"],
     "skipLibCheck": true,
 
-    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "moduleDetection": "force",
