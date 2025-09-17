@@ -1,9 +1,7 @@
 import type { World } from "./World.js";
 
 export abstract class System {
-  protected world: World;
-
-  constructor(world: World) {
+  constructor(protected world: World) {
     this.world = world;
   }
 
