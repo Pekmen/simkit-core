@@ -1,5 +1,4 @@
-import { System } from "../core/System.js";
-import { World } from "../core/World.js";
+import { System, World } from "../index.js";
 
 class TestSystem extends System {
   updateCalls = 0;

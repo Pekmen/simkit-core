@@ -1,5 +1,4 @@
-import { ComponentStorage } from "../core/ComponentStorage.js";
-import { World } from "../core/World.js";
+import { ComponentStorage, World } from "../index.js";
 
 interface TestComponent {
   foo: string;

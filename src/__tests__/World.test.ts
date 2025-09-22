@@ -1,8 +1,4 @@
-import { defineComponent } from "../core/Component.js";
-import { World } from "../core/World.js";
-import { System } from "../core/System.js";
-import { type EntityId } from "../core/Entity.js";
-import { Query } from "../core/Query.js";
+import { defineComponent, EntityId, Query, System, World } from "../index.js";
 
 interface TestComponentA {
   foo: string;

@@ -1,4 +1,4 @@
-import { ComponentType, defineComponent } from "../core/Component.js";
+import { ComponentType, defineComponent } from "../index.js";
 
 interface TestComponentA {
   foo: string;
