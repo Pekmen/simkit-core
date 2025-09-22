@@ -25,10 +25,10 @@ on:
 
 jobs:
   trigger-benchmark:
-    # Run if it's a major/minor release OR if manually triggered with force_run
+    # Run if it's a major/minor release OR if manually triggered
     if: |
-      (github.event_name == 'workflow_call' && inputs.is_major_minor) ||
-      (github.event_name == 'workflow_dispatch' && inputs.force_run)
+      (github.event_name == 'workflow_call' && inputs.is_major_minor == true) ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
