@@ -1,10 +1,10 @@
-import type { World } from "./World.js";
-import type { EntityId } from "./Entity.js";
 import {
+  EntityId,
+  QueryConfig,
+  QueryResult,
   validateQueryConfig,
-  type QueryConfig,
-  type QueryResult,
-} from "./QueryConfig.js";
+  World,
+} from "../index.js";
 
 export class Query {
   private world: World;

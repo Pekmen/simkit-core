@@ -1,9 +1,12 @@
-import { ComponentRegistry } from "./ComponentRegistry.js";
-import { EntityManager, type EntityId } from "./Entity.js";
-import type { ComponentType } from "./Component.js";
-import type { System } from "./System.js";
-import { Query } from "./Query.js";
-import { QueryConfig } from "./QueryConfig.js";
+import {
+  ComponentRegistry,
+  ComponentType,
+  EntityId,
+  EntityManager,
+  Query,
+  QueryConfig,
+  System,
+} from "../index.js";
 
 export class World {
   private entityManager = new EntityManager();

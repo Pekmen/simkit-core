@@ -1,4 +1,4 @@
-import type { World } from "./World.js";
+import { World } from "../index.js";
 
 export abstract class System {
   constructor(protected world: World) {

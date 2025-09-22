@@ -1,4 +1,4 @@
-import type { EntityId } from "./Entity.js";
+import { EntityId } from "./Entity.js";
 
 export class ComponentStorage<T> {
   private components = new Map<EntityId, T>();
