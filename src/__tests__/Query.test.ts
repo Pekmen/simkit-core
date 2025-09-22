@@ -1,7 +1,4 @@
-import { Query } from "../core/Query.js";
-import { World } from "../core/World.js";
-import { defineComponent } from "../core/Component.js";
-import type { QueryConfig } from "../core/QueryConfig.js";
+import { defineComponent, Query, QueryConfig, World } from "../index.js";
 
 interface PositionComponent {
   x: number;

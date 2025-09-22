@@ -1,7 +1,10 @@
-import { ComponentRegistry } from "../core/ComponentRegistry.js";
-import { defineComponent, type ComponentType } from "../core/Component.js";
-import { ComponentStorage } from "../core/ComponentStorage.js";
-import { World } from "../core/World.js";
+import {
+  ComponentRegistry,
+  ComponentStorage,
+  ComponentType,
+  defineComponent,
+  World,
+} from "../index.js";
 
 interface TestComponentA {
   foo: string;

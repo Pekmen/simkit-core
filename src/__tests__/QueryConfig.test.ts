@@ -1,5 +1,9 @@
-import { validateQueryConfig, type QueryConfig } from "../core/QueryConfig.js";
-import { defineComponent, type ComponentType } from "../core/Component.js";
+import {
+  ComponentType,
+  defineComponent,
+  QueryConfig,
+  validateQueryConfig,
+} from "../index.js";
 
 interface TestComponentA {
   value: number;
