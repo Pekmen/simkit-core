@@ -11,10 +11,24 @@ on:
         required: true
         type: boolean
         description: "Whether this is a major or minor release"
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: "Version to benchmark (e.g., 1.2.3)"
+      force_run:
+        required: false
+        type: boolean
+        default: true
+        description: "Force benchmark run even for patch versions"
 
 jobs:
   trigger-benchmark:
-    if: inputs.is_major_minor
+    # Run if it's a major/minor release OR if manually triggered with force_run
+    if: |
+      (github.event_name == 'workflow_call' && inputs.is_major_minor) ||
+      (github.event_name == 'workflow_dispatch' && inputs.force_run)
     runs-on: ubuntu-latest
     permissions:
       contents: write
