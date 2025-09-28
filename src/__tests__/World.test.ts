@@ -308,7 +308,7 @@ describe("World.createQuery", () => {
 
       expect(Object.isFrozen(result)).toBe(true);
       expect(() => {
-        (result as unknown as EntityId[]).push(999 as EntityId);
+        (result as unknown as EntityId[]).push({ id: 999, generation: 0 });
       }).toThrow();
     });
 

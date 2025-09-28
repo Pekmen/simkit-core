@@ -36,16 +36,25 @@ export class World {
     entityId: EntityId,
     componentType: ComponentType<T>,
     data?: Partial<T>,
-  ): void {
+  ): boolean {
+    if (!this.entityManager.isEntityValid(entityId)) {
+      return false;
+    }
+
     const storage = this.componentRegistry.getOrCreate(componentType);
     const component = componentType.create(data);
     storage.addComponent(entityId, component);
+    return true;
   }
 
   removeComponent<T>(
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): boolean {
+    if (!this.entityManager.isEntityValid(entityId)) {
+      return false;
+    }
+
     const storage = this.componentRegistry.get(componentType);
     return storage ? storage.removeComponent(entityId) : false;
   }
@@ -54,6 +63,10 @@ export class World {
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): T | undefined {
+    if (!this.entityManager.isEntityValid(entityId)) {
+      return undefined;
+    }
+
     return this.componentRegistry.get(componentType)?.getComponent(entityId);
   }
 
@@ -61,6 +74,10 @@ export class World {
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): boolean {
+    if (!this.entityManager.isEntityValid(entityId)) {
+      return false;
+    }
+
     return (
       this.componentRegistry.get(componentType)?.hasComponent(entityId) ?? false
     );
