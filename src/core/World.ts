@@ -99,6 +99,28 @@ export class World {
 
   addSystem(system: System): void {
     this.systems.push(system);
+    system.init();
+  }
+
+  removeSystem(system: System): boolean {
+    const index = this.systems.indexOf(system);
+    if (index === -1) return false;
+
+    system.cleanup();
+
+    this.systems.splice(index, 1);
+    return true;
+  }
+
+  getSystems(): System[] {
+    return [...this.systems];
+  }
+
+  clearSystems(): void {
+    for (const system of this.systems) {
+      system.cleanup();
+    }
+    this.systems = [];
   }
 
   update(deltaTime: number): void {
@@ -109,5 +131,11 @@ export class World {
 
   createQuery(config: QueryConfig): Query {
     return new Query(this, config);
+  }
+
+  destroy(): void {
+    this.clearSystems();
+    this.componentRegistry = new ComponentRegistry();
+    this.entityManager = new EntityManager();
   }
 }
