@@ -23,6 +23,16 @@ const TestComponentCType = defineComponent<TestComponentC>("C", {
 class TestSystem extends System {
   lastDelta = 0;
   updateCalls = 0;
+  isInitialized = false;
+  isCleanedUp = false;
+
+  init(): void {
+    this.isInitialized = true;
+  }
+
+  cleanup(): void {
+    this.isCleanedUp = true;
+  }
 
   update(deltaTime: number): void {
     this.lastDelta = deltaTime;
@@ -143,6 +153,8 @@ describe("World", () => {
     const system = new TestSystem(world);
     world.addSystem(system);
 
+    expect(system.isInitialized).toBe(true);
+
     world.update(16);
     expect(system.updateCalls).toBe(1);
     expect(system.lastDelta).toBe(16);
@@ -159,12 +171,66 @@ describe("World", () => {
     world.addSystem(s1);
     world.addSystem(s2);
 
+    expect(s1.isInitialized).toBe(true);
+    expect(s2.isInitialized).toBe(true);
+
     world.update(10);
 
     expect(s1.updateCalls).toBe(1);
     expect(s2.updateCalls).toBe(1);
     expect(s1.lastDelta).toBe(10);
     expect(s2.lastDelta).toBe(10);
+  });
+
+  test("system cleanup when removed", () => {
+    const system = new TestSystem(world);
+    world.addSystem(system);
+
+    expect(system.isCleanedUp).toBe(false);
+
+    world.removeSystem(system);
+    expect(system.isCleanedUp).toBe(true);
+  });
+
+  test("system cleanup when all systems cleared", () => {
+    const s1 = new TestSystem(world);
+    const s2 = new TestSystem(world);
+
+    world.addSystem(s1);
+    world.addSystem(s2);
+
+    expect(s1.isCleanedUp).toBe(false);
+    expect(s2.isCleanedUp).toBe(false);
+
+    world.clearSystems();
+
+    expect(s1.isCleanedUp).toBe(true);
+    expect(s2.isCleanedUp).toBe(true);
+    expect(world.getSystems()).toEqual([]);
+  });
+
+  test("system cleanup when world destroyed", () => {
+    const system = new TestSystem(world);
+    world.addSystem(system);
+
+    expect(system.isCleanedUp).toBe(false);
+
+    world.destroy();
+
+    expect(system.isCleanedUp).toBe(true);
+    expect(world.getSystems()).toEqual([]);
+    expect(world.getEntityCount()).toBe(0);
+  });
+
+  test("getSystems returns copy of systems array", () => {
+    const system = new TestSystem(world);
+    world.addSystem(system);
+
+    const systems = world.getSystems();
+    expect(systems).toContain(system);
+
+    systems.push(new TestSystem(world));
+    expect(world.getSystems().length).toBe(1);
   });
 });
 
