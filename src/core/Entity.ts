@@ -7,14 +7,14 @@ export class EntityManager {
   private nextId = 1;
   private generations = new Map<number, number>();
   private freeIds: number[] = [];
-  private activeEntities: EntityId[] = [];
+  private activeEntities = new Set<EntityId>();
 
   createEntity(): EntityId {
     const id = this.freeIds.pop() ?? this.nextId++;
     const generation = this.generations.get(id) ?? 0;
 
     const entityId = { id, generation };
-    this.activeEntities.push(entityId);
+    this.activeEntities.add(entityId);
 
     if (!this.generations.has(id)) {
       this.generations.set(id, generation);
@@ -29,9 +29,15 @@ export class EntityManager {
     this.generations.set(entityId.id, entityId.generation + 1);
     this.freeIds.push(entityId.id);
 
-    this.activeEntities = this.activeEntities.filter(
-      (e) => e.id !== entityId.id || e.generation !== entityId.generation,
-    );
+    for (const entity of this.activeEntities) {
+      if (
+        entity.id === entityId.id &&
+        entity.generation === entityId.generation
+      ) {
+        this.activeEntities.delete(entity);
+        break;
+      }
+    }
 
     return true;
   }
@@ -45,6 +51,6 @@ export class EntityManager {
   }
 
   getAllActiveEntities(): EntityId[] {
-    return this.activeEntities;
+    return Array.from(this.activeEntities);
   }
 }
