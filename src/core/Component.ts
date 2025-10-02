@@ -12,5 +12,5 @@ export function defineComponent<T>(
     create(data: Partial<T> = {}): T {
       return { ...defaultValues, ...data };
     },
-  } as const;
+  };
 }

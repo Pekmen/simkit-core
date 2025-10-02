@@ -88,12 +88,15 @@ export class World {
     componentType: ComponentType<T>,
     updater: (component: T) => Partial<T>,
   ): boolean {
+    const storage = this.componentRegistry.get(componentType);
+    if (!storage) return false;
+
     const component = this.getComponent(entityId, componentType);
     if (!component) return false;
 
     const updates = updater(component);
     const newComponent = { ...component, ...updates };
-    this.addComponent(entityId, componentType, newComponent);
+    storage.addComponent(entityId, newComponent);
     return true;
   }
 

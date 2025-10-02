@@ -1,10 +1,10 @@
-export type EntityId = number;
+export type EntityId = number & { readonly __brand: "EntityId" };
 
 const INDEX_BITS = 24;
 const INDEX_MASK = (1 << INDEX_BITS) - 1;
 
 function pack(index: number, gen: number): EntityId {
-  return (gen << INDEX_BITS) | index;
+  return ((gen << INDEX_BITS) | index) as EntityId;
 }
 
 function getIndex(id: EntityId): number {
