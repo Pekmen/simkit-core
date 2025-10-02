@@ -1,21 +1,18 @@
 import { ComponentStorage, ComponentType } from "../index.js";
 
 export class ComponentRegistry {
-  private storages = new Map<
-    ComponentType<unknown>,
-    ComponentStorage<unknown>
-  >();
+  private storages = new Map<string, ComponentStorage<unknown>>();
 
   get<T>(componentType: ComponentType<T>): ComponentStorage<T> | undefined {
-    const storage = this.storages.get(componentType);
+    const storage = this.storages.get(componentType.name);
     return storage as ComponentStorage<T> | undefined;
   }
 
   getOrCreate<T>(componentType: ComponentType<T>): ComponentStorage<T> {
-    let storage = this.storages.get(componentType);
+    let storage = this.storages.get(componentType.name);
     if (!storage) {
       storage = new ComponentStorage<T>();
-      this.storages.set(componentType, storage);
+      this.storages.set(componentType.name, storage);
     }
     return storage as ComponentStorage<T>;
   }
