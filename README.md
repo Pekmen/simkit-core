@@ -8,23 +8,23 @@ A lightweight, type-safe Entity-Component-System (ECS) library for TypeScript
 
 Latest benchmark results for version 0.5.1 (10/2/2025):
 
-| Benchmark | Operations/sec |
-|-----------|---------------:|
-| Packed Iteration (5 queries) | 1,200 |
-| Simple Iteration | 356 |
-| Fragmented Iteration | 1,482 |
-| Entity Cycle | 1,966 |
-| Add/Remove Component | 3,456 |
+| Benchmark                    | Operations/sec |
+| ---------------------------- | -------------: |
+| Packed Iteration (5 queries) |          1,200 |
+| Simple Iteration             |            356 |
+| Fragmented Iteration         |          1,482 |
+| Entity Cycle                 |          1,966 |
+| Add/Remove Component         |          3,456 |
 
 ### Benchmark Descriptions
 
 - **Packed Iteration (5 queries)**: Tests core iteration overhead with multiple queries on 1,000 entities
-- **Simple Iteration**: Tests independent systems on entities with different component combinations  
+- **Simple Iteration**: Tests independent systems on entities with different component combinations
 - **Fragmented Iteration**: Tests iteration through fragmented dataset (26 component types)
 - **Entity Cycle**: Tests entity creation and destruction performance
 - **Add/Remove Component**: Tests component addition and removal on existing entities
 
-*Benchmarks run on Node.js v22.19.0 on linux*
+_Benchmarks run on Node.js v22.19.0 on linux_
 
 <!-- BENCHMARK_END -->
 
@@ -115,7 +115,6 @@ class MovementSystem extends System {
       if (pos && vel) {
         pos.x += vel.dx * deltaTime;
         pos.y += vel.dy * deltaTime;
-        this.world.updateComponent(entity, Position, () => pos);
       }
     }
   }
@@ -154,7 +153,6 @@ world.addComponent(entity, ComponentType, data);
 world.removeComponent(entity, ComponentType);
 world.getComponent(entity, ComponentType);
 world.hasComponent(entity, ComponentType);
-world.updateComponent(entity, ComponentType, updater);
 
 // System management
 world.addSystem(system);

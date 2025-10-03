@@ -40,7 +40,6 @@ class MovementSystem extends System {
       if (pos && vel) {
         pos.x += vel.dx * deltaTime;
         pos.y += vel.dy * deltaTime;
-        this.world.updateComponent(entity, PositionComponent, () => pos);
       }
     }
   }

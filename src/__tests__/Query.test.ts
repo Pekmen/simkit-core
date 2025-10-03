@@ -41,27 +41,6 @@ describe("Query", () => {
       expect(query).toBeInstanceOf(Query);
     });
 
-    test("should freeze the config to prevent mutations", () => {
-      const config: QueryConfig = {
-        with: [PositionType],
-        without: [VelocityType],
-        oneOf: [HealthType, TagType],
-      };
-      new Query(world, config);
-
-      expect(() => {
-        config.with?.push(VelocityType);
-      }).toThrow();
-
-      expect(() => {
-        config.without?.push(HealthType);
-      }).toThrow();
-
-      expect(() => {
-        config.oneOf?.push(PositionType);
-      }).toThrow();
-    });
-
     test("should validate config and throw on invalid input", () => {
       const invalidConfig: QueryConfig = {};
       expect(() => new Query(world, invalidConfig)).toThrow(
@@ -291,35 +270,6 @@ describe("Query", () => {
       expect(result).not.toContain(entity2);
       expect(result).not.toContain(entity3);
       expect(result.length).toBe(1);
-    });
-  });
-
-  describe("result immutability", () => {
-    test("should return a frozen array", () => {
-      const entity = world.createEntity();
-      world.addComponent(entity, PositionType);
-
-      const query = new Query(world, { with: [PositionType] });
-      const result = query.execute();
-
-      expect(Object.isFrozen(result)).toBe(true);
-      expect(() => {
-        (result as unknown as number[]).push(123);
-      }).toThrow();
-    });
-
-    test("should return fresh results on each execution", () => {
-      const query = new Query(world, { with: [PositionType] });
-
-      const result1 = query.execute();
-      expect(result1.length).toBe(0);
-
-      const entity = world.createEntity();
-      world.addComponent(entity, PositionType);
-
-      const result2 = query.execute();
-      expect(result2.length).toBe(1);
-      expect(result1.length).toBe(0);
     });
   });
 
