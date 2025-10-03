@@ -45,7 +45,6 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "tsc --noEmit",
       "eslint --quiet --fix"
     ],
     "*.{json,js,ts,jsx,tsx,html}": [

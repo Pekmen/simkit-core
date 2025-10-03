@@ -83,23 +83,6 @@ export class World {
     );
   }
 
-  updateComponent<T>(
-    entityId: EntityId,
-    componentType: ComponentType<T>,
-    updater: (component: T) => Partial<T>,
-  ): boolean {
-    const storage = this.componentRegistry.get(componentType);
-    if (!storage) return false;
-
-    const component = this.getComponent(entityId, componentType);
-    if (!component) return false;
-
-    const updates = updater(component);
-    const newComponent = { ...component, ...updates };
-    storage.addComponent(entityId, newComponent);
-    return true;
-  }
-
   addSystem(system: System): void {
     this.systems.push(system);
     system.init();
@@ -116,7 +99,7 @@ export class World {
   }
 
   getSystems(): System[] {
-    return [...this.systems];
+    return this.systems;
   }
 
   clearSystems(): void {

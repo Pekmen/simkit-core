@@ -1,4 +1,4 @@
-import { defineComponent, EntityId, Query, System, World } from "../index.js";
+import { defineComponent, Query, System, World } from "../index.js";
 
 interface TestComponentA {
   foo: string;
@@ -107,26 +107,6 @@ describe("World", () => {
     expect(result).toBe(false);
   });
 
-  test("update components", () => {
-    const entity = world.createEntity();
-    world.addComponent(entity, TestComponentAType, { foo: "start" });
-
-    world.updateComponent(entity, TestComponentAType, (c) => ({
-      foo: c.foo + "_upd",
-    }));
-    expect(world.getComponent(entity, TestComponentAType)).toEqual({
-      foo: "start_upd",
-    });
-  });
-
-  test("updateComponent returns false when component is missing", () => {
-    const entity = world.createEntity();
-    const result = world.updateComponent(entity, TestComponentAType, (c) => ({
-      foo: c.foo + "x",
-    }));
-    expect(result).toBe(false);
-  });
-
   test("handle multiple component types", () => {
     const entity = world.createEntity();
     world.addComponent(entity, TestComponentAType, { foo: "a" });
@@ -222,15 +202,13 @@ describe("World", () => {
     expect(world.getEntityCount()).toBe(0);
   });
 
-  test("getSystems returns copy of systems array", () => {
-    const system = new TestSystem(world);
-    world.addSystem(system);
+  test("getSystems returns systems array", () => {
+    const system1 = new TestSystem(world);
+    world.addSystem(system1);
 
     const systems = world.getSystems();
-    expect(systems).toContain(system);
-
-    systems.push(new TestSystem(world));
-    expect(world.getSystems().length).toBe(1);
+    expect(systems.length).toBe(1);
+    expect(systems[0]).toBe(system1);
   });
 });
 
@@ -361,34 +339,6 @@ describe("World.createQuery", () => {
 
       world.addComponent(entity, TestComponentAType);
       expect(query.execute().length).toBe(1);
-    });
-  });
-
-  describe("immutability of results", () => {
-    test("should return frozen arrays", () => {
-      const entity = world.createEntity();
-      world.addComponent(entity, TestComponentAType);
-
-      const query = world.createQuery({ with: [TestComponentAType] });
-      const result = query.execute();
-
-      expect(Object.isFrozen(result)).toBe(true);
-      expect(() => {
-        (result as unknown as EntityId[]).push({ id: 999, generation: 0 });
-      }).toThrow();
-    });
-
-    test("should return fresh results each time", () => {
-      const query = world.createQuery({ with: [TestComponentAType] });
-
-      const result1 = query.execute();
-      const entity = world.createEntity();
-      world.addComponent(entity, TestComponentAType);
-      const result2 = query.execute();
-
-      expect(result1.length).toBe(0);
-      expect(result2.length).toBe(1);
-      expect(result1).not.toBe(result2);
     });
   });
 

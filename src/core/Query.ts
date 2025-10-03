@@ -14,14 +14,7 @@ export class Query {
     validateQueryConfig(config);
 
     this.world = world;
-    this.config = { ...config };
-
-    for (const key of ["with", "without", "oneOf"] as const) {
-      if (this.config[key]) {
-        Object.freeze(this.config[key]);
-      }
-    }
-    Object.freeze(this.config);
+    this.config = config;
   }
 
   execute(): QueryResult {
@@ -61,6 +54,6 @@ export class Query {
       matchingEntities.push(entity);
     }
 
-    return Object.freeze(matchingEntities) as QueryResult;
+    return matchingEntities;
   }
 }
