@@ -396,8 +396,6 @@ describe("World.createQuery", () => {
 
       expect(result1).toContain(entity1);
       expect(result2).toContain(entity1);
-
-      expect(result1).not.toBe(result2);
     });
 
     test("should work correctly when query is stored and reused", () => {

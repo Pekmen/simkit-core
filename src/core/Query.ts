@@ -9,6 +9,8 @@ import {
 export class Query {
   private world: World;
   private config: QueryConfig;
+  private cachedResult: QueryResult | null = null;
+  private isDirty = true;
 
   constructor(world: World, config: QueryConfig) {
     validateQueryConfig(config);
@@ -17,7 +19,15 @@ export class Query {
     this.config = config;
   }
 
+  markDirty(): void {
+    this.isDirty = true;
+  }
+
   execute(): QueryResult {
+    if (!this.isDirty && this.cachedResult !== null) {
+      return this.cachedResult;
+    }
+
     const allEntities = this.world.getAllEntities();
     const matchingEntities: EntityId[] = [];
 
@@ -54,6 +64,9 @@ export class Query {
       matchingEntities.push(entity);
     }
 
-    return matchingEntities;
+    this.cachedResult = matchingEntities;
+    this.isDirty = false;
+
+    return this.cachedResult;
   }
 }
