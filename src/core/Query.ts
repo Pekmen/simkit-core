@@ -11,16 +11,27 @@ export class Query {
   private config: QueryConfig;
   private cachedResult: QueryResult | null = null;
   private isDirty = true;
+  private trackedComponentTypes: Set<string>;
 
   constructor(world: World, config: QueryConfig) {
     validateQueryConfig(config);
 
     this.world = world;
     this.config = config;
+
+    this.trackedComponentTypes = new Set([
+      ...(config.with?.map((c) => c.name) ?? []),
+      ...(config.without?.map((c) => c.name) ?? []),
+      ...(config.oneOf?.map((c) => c.name) ?? []),
+    ]);
   }
 
   markDirty(): void {
     this.isDirty = true;
+  }
+
+  tracksComponent(componentName: string): boolean {
+    return this.trackedComponentTypes.has(componentName);
   }
 
   execute(): QueryResult {

@@ -16,7 +16,6 @@ export class World {
 
   createEntity(): EntityId {
     const entityId = this.entityManager.createEntity();
-    this.invalidateQueries();
     return entityId;
   }
 
@@ -25,7 +24,7 @@ export class World {
       storage.removeComponent(entityId);
     }
     this.entityManager.destroyEntity(entityId);
-    this.invalidateQueries();
+    this.invalidateAllQueries();
   }
 
   getAllEntities(): EntityId[] {
@@ -48,7 +47,8 @@ export class World {
     const storage = this.componentRegistry.getOrCreate(componentType);
     const component = componentType.create(data);
     storage.addComponent(entityId, component);
-    this.invalidateQueries();
+
+    this.invalidateQueriesForComponent(componentType);
     return true;
   }
 
@@ -64,7 +64,7 @@ export class World {
     const removed = storage ? storage.removeComponent(entityId) : false;
 
     if (removed) {
-      this.invalidateQueries();
+      this.invalidateQueriesForComponent(componentType);
     }
 
     return removed;
@@ -132,7 +132,17 @@ export class World {
     return query;
   }
 
-  private invalidateQueries(): void {
+  private invalidateQueriesForComponent<T>(
+    componentType: ComponentType<T>,
+  ): void {
+    for (const query of this.queries) {
+      if (query.tracksComponent(componentType.name)) {
+        query.markDirty();
+      }
+    }
+  }
+
+  private invalidateAllQueries(): void {
     for (const query of this.queries) {
       query.markDirty();
     }
