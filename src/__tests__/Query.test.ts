@@ -1,49 +1,49 @@
 import { defineComponent, Query, QueryConfig, World } from "../index.js";
 
-interface PositionComponent {
+interface TestComponentA {
   x: number;
   y: number;
 }
 
-interface VelocityComponent {
+interface TestComponentB {
   dx: number;
   dy: number;
 }
 
-interface HealthComponent {
+interface TestComponentC {
   hp: number;
   maxHp: number;
 }
 
-interface TagComponent {
+interface TestComponentD {
   tag: string;
 }
 
 describe("Query", () => {
   let world: World;
-  let PositionType: ReturnType<typeof defineComponent<PositionComponent>>;
-  let VelocityType: ReturnType<typeof defineComponent<VelocityComponent>>;
-  let HealthType: ReturnType<typeof defineComponent<HealthComponent>>;
-  let TagType: ReturnType<typeof defineComponent<TagComponent>>;
+  let ComponentA: ReturnType<typeof defineComponent<TestComponentA>>;
+  let ComponentB: ReturnType<typeof defineComponent<TestComponentB>>;
+  let ComponentC: ReturnType<typeof defineComponent<TestComponentC>>;
+  let ComponentD: ReturnType<typeof defineComponent<TestComponentD>>;
 
   beforeEach(() => {
     world = new World();
-    PositionType = defineComponent("Position", { x: 0, y: 0 });
-    VelocityType = defineComponent("Velocity", { dx: 0, dy: 0 });
-    HealthType = defineComponent("Health", { hp: 100, maxHp: 100 });
-    TagType = defineComponent("Tag", { tag: "default" });
+    ComponentA = defineComponent("ComponentA", { x: 0, y: 0 });
+    ComponentB = defineComponent("ComponentB", { dx: 0, dy: 0 });
+    ComponentC = defineComponent("ComponentC", { hp: 100, maxHp: 100 });
+    ComponentD = defineComponent("ComponentD", { tag: "default" });
   });
 
   describe("constructor", () => {
     test("should create a query with valid config", () => {
-      const config: QueryConfig = { with: [PositionType] };
-      const query = new Query(world, config);
+      const config: QueryConfig = { with: [ComponentA] };
+      const query = world.createQuery(config);
       expect(query).toBeInstanceOf(Query);
     });
 
     test("should validate config and throw on invalid input", () => {
       const invalidConfig: QueryConfig = {};
-      expect(() => new Query(world, invalidConfig)).toThrow(
+      expect(() => world.createQuery(invalidConfig)).toThrow(
         "Query must specify at least one constraint",
       );
     });
@@ -55,14 +55,14 @@ describe("Query", () => {
       const entity2 = world.createEntity();
       const entity3 = world.createEntity();
 
-      world.addComponent(entity1, PositionType, { x: 1, y: 1 });
-      world.addComponent(entity1, VelocityType, { dx: 1, dy: 1 });
+      world.addComponent(entity1, ComponentA, { x: 1, y: 1 });
+      world.addComponent(entity1, ComponentB, { dx: 1, dy: 1 });
 
-      world.addComponent(entity2, PositionType, { x: 2, y: 2 });
+      world.addComponent(entity2, ComponentA, { x: 2, y: 2 });
 
-      world.addComponent(entity3, VelocityType, { dx: 3, dy: 3 });
+      world.addComponent(entity3, ComponentB, { dx: 3, dy: 3 });
 
-      const query = new Query(world, { with: [PositionType, VelocityType] });
+      const query = world.createQuery({ with: [ComponentA, ComponentB] });
       const result = query.execute();
 
       expect(result).toContain(entity1);
@@ -73,9 +73,9 @@ describe("Query", () => {
 
     test("should return empty array when no entities match", () => {
       const entity1 = world.createEntity();
-      world.addComponent(entity1, PositionType);
+      world.addComponent(entity1, ComponentA);
 
-      const query = new Query(world, { with: [VelocityType] });
+      const query = world.createQuery({ with: [ComponentB] });
       const result = query.execute();
 
       expect(result).toEqual([]);
@@ -85,10 +85,10 @@ describe("Query", () => {
       const entity1 = world.createEntity();
       const entity2 = world.createEntity();
 
-      world.addComponent(entity1, PositionType);
-      world.addComponent(entity2, VelocityType);
+      world.addComponent(entity1, ComponentA);
+      world.addComponent(entity2, ComponentB);
 
-      const query = new Query(world, { with: [PositionType] });
+      const query = world.createQuery({ with: [ComponentA] });
       const result = query.execute();
 
       expect(result).toContain(entity1);
@@ -103,11 +103,11 @@ describe("Query", () => {
       const entity2 = world.createEntity();
       const entity3 = world.createEntity();
 
-      world.addComponent(entity1, PositionType);
-      world.addComponent(entity2, PositionType);
-      world.addComponent(entity2, VelocityType);
+      world.addComponent(entity1, ComponentA);
+      world.addComponent(entity2, ComponentA);
+      world.addComponent(entity2, ComponentB);
 
-      const query = new Query(world, { without: [VelocityType] });
+      const query = world.createQuery({ without: [ComponentB] });
       const result = query.execute();
 
       expect(result).toContain(entity1);
@@ -122,11 +122,11 @@ describe("Query", () => {
       const entity3 = world.createEntity();
       const entity4 = world.createEntity();
 
-      world.addComponent(entity1, PositionType);
-      world.addComponent(entity2, VelocityType);
-      world.addComponent(entity3, HealthType);
+      world.addComponent(entity1, ComponentA);
+      world.addComponent(entity2, ComponentB);
+      world.addComponent(entity3, ComponentC);
 
-      const query = new Query(world, { without: [VelocityType, HealthType] });
+      const query = world.createQuery({ without: [ComponentB, ComponentC] });
       const result = query.execute();
 
       expect(result).toContain(entity1);
@@ -144,12 +144,12 @@ describe("Query", () => {
       const entity3 = world.createEntity();
       const entity4 = world.createEntity();
 
-      world.addComponent(entity1, PositionType);
-      world.addComponent(entity2, VelocityType);
-      world.addComponent(entity3, PositionType);
-      world.addComponent(entity3, VelocityType);
+      world.addComponent(entity1, ComponentA);
+      world.addComponent(entity2, ComponentB);
+      world.addComponent(entity3, ComponentA);
+      world.addComponent(entity3, ComponentB);
 
-      const query = new Query(world, { oneOf: [PositionType, VelocityType] });
+      const query = world.createQuery({ oneOf: [ComponentA, ComponentB] });
       const result = query.execute();
 
       expect(result).toContain(entity1);
@@ -161,9 +161,9 @@ describe("Query", () => {
 
     test("should return empty array when no entities have any of the components", () => {
       const entity1 = world.createEntity();
-      world.addComponent(entity1, HealthType);
+      world.addComponent(entity1, ComponentC);
 
-      const query = new Query(world, { oneOf: [PositionType, VelocityType] });
+      const query = world.createQuery({ oneOf: [ComponentA, ComponentB] });
       const result = query.execute();
 
       expect(result).toEqual([]);
@@ -176,17 +176,17 @@ describe("Query", () => {
       const entity2 = world.createEntity();
       const entity3 = world.createEntity();
 
-      world.addComponent(entity1, PositionType);
-      world.addComponent(entity1, HealthType);
+      world.addComponent(entity1, ComponentA);
+      world.addComponent(entity1, ComponentC);
 
-      world.addComponent(entity2, PositionType);
-      world.addComponent(entity2, VelocityType);
+      world.addComponent(entity2, ComponentA);
+      world.addComponent(entity2, ComponentB);
 
-      world.addComponent(entity3, VelocityType);
+      world.addComponent(entity3, ComponentB);
 
-      const query = new Query(world, {
-        with: [PositionType],
-        without: [VelocityType],
+      const query = world.createQuery({
+        with: [ComponentA],
+        without: [ComponentB],
       });
       const result = query.execute();
 
@@ -201,17 +201,17 @@ describe("Query", () => {
       const entity2 = world.createEntity();
       const entity3 = world.createEntity();
 
-      world.addComponent(entity1, PositionType);
-      world.addComponent(entity1, HealthType);
+      world.addComponent(entity1, ComponentA);
+      world.addComponent(entity1, ComponentC);
 
-      world.addComponent(entity2, PositionType);
-      world.addComponent(entity2, TagType);
+      world.addComponent(entity2, ComponentA);
+      world.addComponent(entity2, ComponentD);
 
-      world.addComponent(entity3, PositionType);
+      world.addComponent(entity3, ComponentA);
 
-      const query = new Query(world, {
-        with: [PositionType],
-        oneOf: [HealthType, TagType],
+      const query = world.createQuery({
+        with: [ComponentA],
+        oneOf: [ComponentC, ComponentD],
       });
       const result = query.execute();
 
@@ -227,14 +227,14 @@ describe("Query", () => {
       const entity3 = world.createEntity();
       const entity4 = world.createEntity();
 
-      world.addComponent(entity1, HealthType);
-      world.addComponent(entity2, TagType);
-      world.addComponent(entity3, PositionType);
-      world.addComponent(entity4, VelocityType);
+      world.addComponent(entity1, ComponentC);
+      world.addComponent(entity2, ComponentD);
+      world.addComponent(entity3, ComponentA);
+      world.addComponent(entity4, ComponentB);
 
-      const query = new Query(world, {
-        without: [PositionType],
-        oneOf: [HealthType, TagType],
+      const query = world.createQuery({
+        without: [ComponentA],
+        oneOf: [ComponentC, ComponentD],
       });
       const result = query.execute();
 
@@ -250,19 +250,19 @@ describe("Query", () => {
       const entity2 = world.createEntity();
       const entity3 = world.createEntity();
 
-      world.addComponent(entity1, PositionType);
-      world.addComponent(entity1, HealthType);
+      world.addComponent(entity1, ComponentA);
+      world.addComponent(entity1, ComponentC);
 
-      world.addComponent(entity2, PositionType);
-      world.addComponent(entity2, VelocityType);
-      world.addComponent(entity2, TagType);
+      world.addComponent(entity2, ComponentA);
+      world.addComponent(entity2, ComponentB);
+      world.addComponent(entity2, ComponentD);
 
-      world.addComponent(entity3, PositionType);
+      world.addComponent(entity3, ComponentA);
 
-      const query = new Query(world, {
-        with: [PositionType],
-        without: [VelocityType],
-        oneOf: [HealthType, TagType],
+      const query = world.createQuery({
+        with: [ComponentA],
+        without: [ComponentB],
+        oneOf: [ComponentC, ComponentD],
       });
       const result = query.execute();
 
@@ -275,7 +275,7 @@ describe("Query", () => {
 
   describe("edge cases", () => {
     test("should work with no entities in world", () => {
-      const query = new Query(world, { with: [PositionType] });
+      const query = world.createQuery({ with: [ComponentA] });
       const result = query.execute();
       expect(result).toEqual([]);
     });
@@ -284,10 +284,10 @@ describe("Query", () => {
       const entity1 = world.createEntity();
       const entity2 = world.createEntity();
 
-      world.addComponent(entity1, PositionType);
-      world.addComponent(entity2, PositionType);
+      world.addComponent(entity1, ComponentA);
+      world.addComponent(entity2, ComponentA);
 
-      const query = new Query(world, { with: [PositionType] });
+      const query = world.createQuery({ with: [ComponentA] });
       let result = query.execute();
       expect(result.length).toBe(2);
 
@@ -299,14 +299,14 @@ describe("Query", () => {
 
     test("should work after components are removed", () => {
       const entity = world.createEntity();
-      world.addComponent(entity, PositionType);
-      world.addComponent(entity, VelocityType);
+      world.addComponent(entity, ComponentA);
+      world.addComponent(entity, ComponentB);
 
-      const query = new Query(world, { with: [PositionType, VelocityType] });
+      const query = world.createQuery({ with: [ComponentA, ComponentB] });
       let result = query.execute();
       expect(result.length).toBe(1);
 
-      world.removeComponent(entity, VelocityType);
+      world.removeComponent(entity, ComponentB);
       result = query.execute();
       expect(result.length).toBe(0);
     });
