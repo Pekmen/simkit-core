@@ -1,7 +1,6 @@
-export type EntityId = number & { readonly __brand: "EntityId" };
+import { INDEX_BITS, INDEX_MASK, MAX_ENTITY_INDEX } from "./constants.js";
 
-const INDEX_BITS = 24;
-const INDEX_MASK = (1 << INDEX_BITS) - 1;
+export type EntityId = number & { readonly __brand: "EntityId" };
 
 function pack(index: number, gen: number): EntityId {
   return ((gen << INDEX_BITS) | index) as EntityId;
@@ -21,8 +20,20 @@ export class EntityManager {
   private activeEntities = new Set<EntityId>();
 
   createEntity(): EntityId {
-    const id = this.freeList.pop() ?? pack(this.nextIndex++, 0);
+    const recycledId = this.freeList.pop();
+    if (recycledId !== undefined) {
+      this.activeEntities.add(recycledId);
+      return recycledId;
+    }
 
+    if (this.nextIndex > MAX_ENTITY_INDEX) {
+      const maxEntities = String(MAX_ENTITY_INDEX + 1);
+      throw new Error(
+        `Maximum entity limit reached (${maxEntities} entities).`,
+      );
+    }
+
+    const id = pack(this.nextIndex++, 0);
     this.activeEntities.add(id);
     return id;
   }
