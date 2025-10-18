@@ -6,15 +6,15 @@ A lightweight, type-safe Entity-Component-System (ECS) library for TypeScript
 
 ## Performance
 
-Latest benchmark results for version 0.7.3 (10/9/2025):
+Latest benchmark results for version 0.7.4 (10/18/2025):
 
 | Benchmark | Operations/sec |
 |-----------|---------------:|
-| Packed Iteration (5 queries) | 8,968 |
-| Simple Iteration | 3,156 |
-| Fragmented Iteration | 13,648 |
-| Entity Cycle | 3,037 |
-| Add/Remove Component | 5,453 |
+| Packed Iteration (5 queries) | 9,357 |
+| Simple Iteration | 3,221 |
+| Fragmented Iteration | 12,368 |
+| Entity Cycle | 2,544 |
+| Add/Remove Component | 3,731 |
 
 ### Benchmark Descriptions
 
