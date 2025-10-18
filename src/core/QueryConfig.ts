@@ -24,22 +24,22 @@ function validateComponentArray(
 
 function checkComponentConflicts(
   component: ComponentType<unknown>,
-  withSet: Set<ComponentType<unknown>>,
-  withoutSet: Set<ComponentType<unknown>>,
+  withSet: Set<string>,
+  withoutSet: Set<string>,
   currentArrayName: string,
 ): void {
-  if (currentArrayName === "without" && withSet.has(component)) {
+  if (currentArrayName === "without" && withSet.has(component.name)) {
     throw new Error(
       `Component "${component.name}" cannot be both required (with) and excluded (without)`,
     );
   }
   if (currentArrayName === "oneOf") {
-    if (withSet.has(component)) {
+    if (withSet.has(component.name)) {
       throw new Error(
         `Component "${component.name}" cannot be both required (with) and optional (oneOf)`,
       );
     }
-    if (withoutSet.has(component)) {
+    if (withoutSet.has(component.name)) {
       throw new Error(
         `Component "${component.name}" cannot be both excluded (without) and optional (oneOf)`,
       );
@@ -77,13 +77,13 @@ export function validateQueryConfig(config: QueryConfig): void {
     );
   }
 
-  const withSet = new Set<ComponentType<unknown>>();
-  const withoutSet = new Set<ComponentType<unknown>>();
+  const withSet = new Set<string>();
+  const withoutSet = new Set<string>();
 
   if (config.with) {
     validateComponentArray(config.with, "with");
     for (const component of config.with) {
-      withSet.add(component);
+      withSet.add(component.name);
     }
   }
 
@@ -91,7 +91,7 @@ export function validateQueryConfig(config: QueryConfig): void {
     validateComponentArray(config.without, "without");
     for (const component of config.without) {
       checkComponentConflicts(component, withSet, withoutSet, "without");
-      withoutSet.add(component);
+      withoutSet.add(component.name);
     }
   }
 

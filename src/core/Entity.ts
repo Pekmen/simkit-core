@@ -2,15 +2,15 @@ import { INDEX_BITS, INDEX_MASK, MAX_ENTITY_INDEX } from "./constants.js";
 
 export type EntityId = number & { readonly __brand: "EntityId" };
 
-function pack(index: number, gen: number): EntityId {
+export function pack(index: number, gen: number): EntityId {
   return ((gen << INDEX_BITS) | index) as EntityId;
 }
 
-function getIndex(id: EntityId): number {
+export function getIndex(id: EntityId): number {
   return id & INDEX_MASK;
 }
 
-function getGen(id: EntityId): number {
+export function getGen(id: EntityId): number {
   return id >>> INDEX_BITS;
 }
 
@@ -59,11 +59,11 @@ export class EntityManager {
     return this.activeEntities.size;
   }
 
-  getAllActiveEntities(): readonly EntityId[] {
-    return Array.from(this.activeEntities);
-  }
-
   getActiveEntitiesIterator(): IterableIterator<EntityId> {
     return this.activeEntities.values();
+  }
+
+  getAllActiveEntities(): readonly EntityId[] {
+    return Array.from(this.activeEntities);
   }
 }

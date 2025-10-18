@@ -9,12 +9,14 @@ export class ComponentRegistry {
   }
 
   getOrCreate<T>(componentType: ComponentType<T>): ComponentStorage<T> {
-    let storage = this.storages.get(componentType.name);
-    if (!storage) {
-      storage = new ComponentStorage<T>();
-      this.storages.set(componentType.name, storage);
+    const existing = this.storages.get(componentType.name);
+    if (existing) {
+      return existing as ComponentStorage<T>;
     }
-    return storage as ComponentStorage<T>;
+
+    const storage = new ComponentStorage<T>();
+    this.storages.set(componentType.name, storage);
+    return storage;
   }
 
   values(): IterableIterator<ComponentStorage<unknown>> {
