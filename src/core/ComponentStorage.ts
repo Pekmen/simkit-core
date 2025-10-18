@@ -36,21 +36,17 @@ export class ComponentStorage<T> {
       return false;
     }
 
-    const lastIndex = this.dense.length - 1;
+    const lastDenseIndex = this.dense.length - 1;
 
-    if (denseIndex < lastIndex) {
-      const lastComponent = this.dense[lastIndex];
-      const lastEntityId = this.entities[lastIndex];
+    if (denseIndex !== lastDenseIndex) {
+      const movedComponent = this.dense[lastDenseIndex];
+      const movedEntity = this.entities[lastDenseIndex];
 
-      if (lastComponent === undefined || lastEntityId === undefined) {
-        throw new Error("ComponentStorage internal error: arrays out of sync");
+      if (movedComponent !== undefined && movedEntity !== undefined) {
+        this.dense[denseIndex] = movedComponent;
+        this.entities[denseIndex] = movedEntity;
+        this.sparse[getEntityIndex(movedEntity)] = denseIndex;
       }
-
-      this.dense[denseIndex] = lastComponent;
-      this.entities[denseIndex] = lastEntityId;
-
-      const lastEntityIndex = getEntityIndex(lastEntityId);
-      this.sparse[lastEntityIndex] = denseIndex;
     }
 
     this.dense.pop();
@@ -78,11 +74,11 @@ export class ComponentStorage<T> {
   }
 
   getAllComponents(): readonly T[] {
-    return this.dense;
+    return [...this.dense];
   }
 
   getAllEntities(): readonly EntityId[] {
-    return this.entities;
+    return [...this.entities];
   }
 
   size(): number {

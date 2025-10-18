@@ -20,19 +20,33 @@ export class World {
   }
 
   destroyEntity(entityId: EntityId): void {
-    for (const storage of this.componentRegistry.values()) {
-      storage.removeComponent(entityId);
+    const modifiedComponents = new Set<string>();
+
+    for (const [componentName, storage] of this.componentRegistry.entries()) {
+      if (storage.hasComponent(entityId)) {
+        storage.removeComponent(entityId);
+        modifiedComponents.add(componentName);
+      }
     }
+
     this.entityManager.destroyEntity(entityId);
-    this.invalidateAllQueries();
+
+    for (const query of this.queries) {
+      for (const componentName of modifiedComponents) {
+        if (query.tracksComponent(componentName)) {
+          query.markDirty();
+          break;
+        }
+      }
+    }
   }
 
   getAllEntities(): EntityId[] {
-    return this.entityManager.getAllActiveEntities();
+    return this.entityManager.getAllActiveEntities() as EntityId[];
   }
 
   getEntityCount(): number {
-    return this.entityManager.getAllActiveEntities().length;
+    return this.entityManager.getEntityCount();
   }
 
   addComponent<T>(
@@ -45,8 +59,7 @@ export class World {
     }
 
     const storage = this.componentRegistry.getOrCreate(componentType);
-    const component = componentType.create(data);
-    storage.addComponent(entityId, component);
+    storage.addComponent(entityId, componentType.create(data));
 
     this.invalidateQueriesForComponent(componentType);
     return true;
@@ -94,6 +107,12 @@ export class World {
     );
   }
 
+  getEntitiesWithComponent<T>(
+    componentType: ComponentType<T>,
+  ): readonly EntityId[] | undefined {
+    return this.componentRegistry.get(componentType)?.getAllEntities();
+  }
+
   addSystem(system: System): void {
     this.systems.push(system);
     system.init();
@@ -109,7 +128,7 @@ export class World {
     return true;
   }
 
-  getSystems(): System[] {
+  getSystems(): readonly System[] {
     return this.systems;
   }
 
@@ -139,12 +158,6 @@ export class World {
       if (query.tracksComponent(componentType.name)) {
         query.markDirty();
       }
-    }
-  }
-
-  private invalidateAllQueries(): void {
-    for (const query of this.queries) {
-      query.markDirty();
     }
   }
 
