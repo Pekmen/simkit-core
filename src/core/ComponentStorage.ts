@@ -10,50 +10,6 @@ export class ComponentStorage<T> {
   private dense: T[] = [];
   private entities: EntityId[] = [];
 
-  private bitset: number[] = [];
-
-  private setBit(index: number): void {
-    const arrayIndex = index >>> 5;
-    const bitIndex = index & 31;
-
-    while (this.bitset.length <= arrayIndex) {
-      this.bitset.push(0);
-    }
-
-    const word = this.bitset[arrayIndex];
-    if (word !== undefined) {
-      this.bitset[arrayIndex] = word | (1 << bitIndex);
-    }
-  }
-
-  private clearBit(index: number): void {
-    const arrayIndex = index >>> 5;
-    const bitIndex = index & 31;
-
-    if (arrayIndex < this.bitset.length) {
-      const word = this.bitset[arrayIndex];
-      if (word !== undefined) {
-        this.bitset[arrayIndex] = word & ~(1 << bitIndex);
-      }
-    }
-  }
-
-  private hasBit(index: number): boolean {
-    const arrayIndex = index >>> 5;
-    const bitIndex = index & 31;
-
-    if (arrayIndex >= this.bitset.length) {
-      return false;
-    }
-
-    const word = this.bitset[arrayIndex];
-    if (word === undefined) {
-      return false;
-    }
-
-    return (word & (1 << bitIndex)) !== 0;
-  }
-
   addComponent(entityId: EntityId, component: T): void {
     const entityIndex = getEntityIndex(entityId);
     const existingDenseIndex = this.sparse[entityIndex];
@@ -70,7 +26,6 @@ export class ComponentStorage<T> {
     this.sparse[entityIndex] = denseIndex;
     this.dense.push(component);
     this.entities.push(entityId);
-    this.setBit(entityIndex);
   }
 
   removeComponent(entityId: EntityId): boolean {
@@ -101,7 +56,6 @@ export class ComponentStorage<T> {
     this.dense.pop();
     this.entities.pop();
     this.sparse[entityIndex] = undefined;
-    this.clearBit(entityIndex);
 
     return true;
   }
@@ -119,20 +73,16 @@ export class ComponentStorage<T> {
 
   hasComponent(entityId: EntityId): boolean {
     const entityIndex = getEntityIndex(entityId);
-    if (!this.hasBit(entityIndex)) {
-      return false;
-    }
-
     const denseIndex = this.sparse[entityIndex];
     return denseIndex !== undefined && this.entities[denseIndex] === entityId;
   }
 
-  getAllComponents(): T[] {
-    return this.dense.slice();
+  getAllComponents(): readonly T[] {
+    return this.dense;
   }
 
-  getAllEntities(): EntityId[] {
-    return this.entities.slice();
+  getAllEntities(): readonly EntityId[] {
+    return this.entities;
   }
 
   size(): number {
@@ -143,6 +93,5 @@ export class ComponentStorage<T> {
     this.sparse = [];
     this.dense = [];
     this.entities = [];
-    this.bitset = [];
   }
 }
