@@ -33,14 +33,14 @@ export class ComponentStorage<T> {
 
     const lastDenseIndex = this.dense.length - 1;
 
-    if (denseIndex < lastDenseIndex) {
-      const movedComponent = this.dense[lastDenseIndex];
-      const movedEntity = this.entities[lastDenseIndex];
+    if (denseIndex !== lastDenseIndex) {
+      const lastComponent = this.dense[lastDenseIndex];
+      const lastEntity = this.entities[lastDenseIndex];
 
-      if (movedComponent !== undefined && movedEntity !== undefined) {
-        this.dense[denseIndex] = movedComponent;
-        this.entities[denseIndex] = movedEntity;
-        this.sparse[getIndex(movedEntity)] = denseIndex;
+      if (lastComponent !== undefined && lastEntity !== undefined) {
+        this.dense[denseIndex] = lastComponent;
+        this.entities[denseIndex] = lastEntity;
+        this.sparse[getIndex(lastEntity)] = denseIndex;
       }
     }
 

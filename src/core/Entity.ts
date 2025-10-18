@@ -18,11 +18,13 @@ export class EntityManager {
   private nextIndex = 0;
   private freeList: EntityId[] = [];
   private activeEntities = new Set<EntityId>();
+  private activeEntitiesCache: EntityId[] | null = null;
 
   createEntity(): EntityId {
     const recycledId = this.freeList.pop();
     if (recycledId !== undefined) {
       this.activeEntities.add(recycledId);
+      this.activeEntitiesCache = null;
       return recycledId;
     }
 
@@ -35,6 +37,7 @@ export class EntityManager {
 
     const id = pack(this.nextIndex++, 0);
     this.activeEntities.add(id);
+    this.activeEntitiesCache = null;
     return id;
   }
 
@@ -48,6 +51,7 @@ export class EntityManager {
     this.freeList.push(nextId);
 
     this.activeEntities.delete(entityId);
+    this.activeEntitiesCache = null;
     return true;
   }
 
@@ -64,6 +68,7 @@ export class EntityManager {
   }
 
   getAllActiveEntities(): readonly EntityId[] {
-    return Array.from(this.activeEntities);
+    this.activeEntitiesCache ??= Array.from(this.activeEntities);
+    return this.activeEntitiesCache;
   }
 }
