@@ -55,7 +55,15 @@ export class EntityManager {
     return this.activeEntities.has(entityId);
   }
 
-  getAllActiveEntities(): EntityId[] {
+  getEntityCount(): number {
+    return this.activeEntities.size;
+  }
+
+  getAllActiveEntities(): readonly EntityId[] {
     return Array.from(this.activeEntities);
+  }
+
+  getActiveEntitiesIterator(): IterableIterator<EntityId> {
+    return this.activeEntities.values();
   }
 }

@@ -20,4 +20,8 @@ export class ComponentRegistry {
   values(): IterableIterator<ComponentStorage<unknown>> {
     return this.storages.values();
   }
+
+  entries(): IterableIterator<[string, ComponentStorage<unknown>]> {
+    return this.storages.entries();
+  }
 }

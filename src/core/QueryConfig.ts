@@ -9,7 +9,44 @@ export interface QueryConfig {
 export type QueryResult = readonly EntityId[];
 export type QueryFunction = () => QueryResult;
 
-// @TODO: break into separate functions for each check?
+function validateComponentArray(
+  components: ComponentType<unknown>[],
+  arrayName: string,
+): void {
+  for (const component of components) {
+    if (!component.name || typeof component.name !== "string") {
+      throw new Error(
+        `Invalid component in '${arrayName}': component must have a valid name property`,
+      );
+    }
+  }
+}
+
+function checkComponentConflicts(
+  component: ComponentType<unknown>,
+  withSet: Set<ComponentType<unknown>>,
+  withoutSet: Set<ComponentType<unknown>>,
+  currentArrayName: string,
+): void {
+  if (currentArrayName === "without" && withSet.has(component)) {
+    throw new Error(
+      `Component "${component.name}" cannot be both required (with) and excluded (without)`,
+    );
+  }
+  if (currentArrayName === "oneOf") {
+    if (withSet.has(component)) {
+      throw new Error(
+        `Component "${component.name}" cannot be both required (with) and optional (oneOf)`,
+      );
+    }
+    if (withoutSet.has(component)) {
+      throw new Error(
+        `Component "${component.name}" cannot be both excluded (without) and optional (oneOf)`,
+      );
+    }
+  }
+}
+
 export function validateQueryConfig(config: QueryConfig): void {
   const hasConstraints =
     (config.with?.length ?? 0) > 0 ||
@@ -42,56 +79,26 @@ export function validateQueryConfig(config: QueryConfig): void {
 
   const withSet = new Set<ComponentType<unknown>>();
   const withoutSet = new Set<ComponentType<unknown>>();
-  const oneOfSet = new Set<ComponentType<unknown>>();
 
-  // Process 'with' array
   if (config.with) {
+    validateComponentArray(config.with, "with");
     for (const component of config.with) {
-      if (!component.name || typeof component.name !== "string") {
-        throw new Error(
-          `Invalid component: component must have a valid name property`,
-        );
-      }
       withSet.add(component);
     }
   }
 
-  // Process 'without' array and check conflicts with 'with'
   if (config.without) {
+    validateComponentArray(config.without, "without");
     for (const component of config.without) {
-      if (!component.name || typeof component.name !== "string") {
-        throw new Error(
-          `Invalid component: component must have a valid name property`,
-        );
-      }
-      if (withSet.has(component)) {
-        throw new Error(
-          `Component "${component.name}" cannot be both required (with) and excluded (without)`,
-        );
-      }
+      checkComponentConflicts(component, withSet, withoutSet, "without");
       withoutSet.add(component);
     }
   }
 
-  // Process 'oneOf' array and check conflicts with 'with' and 'without'
   if (config.oneOf) {
+    validateComponentArray(config.oneOf, "oneOf");
     for (const component of config.oneOf) {
-      if (!component.name || typeof component.name !== "string") {
-        throw new Error(
-          `Invalid component: component must have a valid name property`,
-        );
-      }
-      if (withSet.has(component)) {
-        throw new Error(
-          `Component "${component.name}" cannot be both required (with) and optional (oneOf)`,
-        );
-      }
-      if (withoutSet.has(component)) {
-        throw new Error(
-          `Component "${component.name}" cannot be both excluded (without) and optional (oneOf)`,
-        );
-      }
-      oneOfSet.add(component);
+      checkComponentConflicts(component, withSet, withoutSet, "oneOf");
     }
   }
 }

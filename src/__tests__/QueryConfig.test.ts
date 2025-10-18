@@ -160,7 +160,7 @@ describe("validateQueryConfig", () => {
       expect(() => {
         validateQueryConfig(config);
       }).toThrow(
-        "Invalid component: component must have a valid name property",
+        "Invalid component in 'with': component must have a valid name property",
       );
     });
 
@@ -173,7 +173,7 @@ describe("validateQueryConfig", () => {
       expect(() => {
         validateQueryConfig(config);
       }).toThrow(
-        "Invalid component: component must have a valid name property",
+        "Invalid component in 'with': component must have a valid name property",
       );
     });
 
@@ -186,7 +186,7 @@ describe("validateQueryConfig", () => {
       expect(() => {
         validateQueryConfig(config);
       }).toThrow(
-        "Invalid component: component must have a valid name property",
+        "Invalid component in 'without': component must have a valid name property",
       );
     });
 
@@ -198,7 +198,7 @@ describe("validateQueryConfig", () => {
       expect(() => {
         validateQueryConfig(config);
       }).toThrow(
-        "Invalid component: component must have a valid name property",
+        "Invalid component in 'oneOf': component must have a valid name property",
       );
     });
   });
@@ -287,7 +287,7 @@ describe("validateQueryConfig", () => {
       expect(() => {
         validateQueryConfig(config);
       }).toThrow(
-        "Invalid component: component must have a valid name property",
+        "Invalid component in 'with': component must have a valid name property",
       );
     });
 
@@ -300,7 +300,7 @@ describe("validateQueryConfig", () => {
       expect(() => {
         validateQueryConfig(config);
       }).toThrow(
-        "Invalid component: component must have a valid name property",
+        "Invalid component in 'with': component must have a valid name property",
       );
     });
 
@@ -315,7 +315,7 @@ describe("validateQueryConfig", () => {
       expect(() => {
         validateQueryConfig(config);
       }).toThrow(
-        "Invalid component: component must have a valid name property",
+        "Invalid component in 'with': component must have a valid name property",
       );
     });
 
