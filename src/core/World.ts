@@ -13,38 +13,31 @@ export class World {
   private componentRegistry = new ComponentRegistry();
   private systems: System[] = [];
   private queries: Query[] = [];
-  private entityComponents = new Map<EntityId, Set<string>>();
 
   createEntity(): EntityId {
-    const entityId = this.entityManager.createEntity();
-    this.entityComponents.set(entityId, new Set());
-    return entityId;
+    return this.entityManager.createEntity();
   }
 
   destroyEntity(entityId: EntityId): void {
-    const componentNames = this.entityComponents.get(entityId);
+    const modifiedComponents = new Set<string>();
 
-    if (componentNames) {
-      for (const componentName of componentNames) {
-        const storage = this.componentRegistry.get({
-          name: componentName,
-        } as ComponentType<unknown>);
-        storage?.removeComponent(entityId);
+    for (const [componentName, storage] of this.componentRegistry.entries()) {
+      if (storage.hasComponent(entityId)) {
+        storage.removeComponent(entityId);
+        modifiedComponents.add(componentName);
       }
-
-      for (const query of this.queries) {
-        for (const componentName of componentNames) {
-          if (query.tracksComponent(componentName)) {
-            query.markDirty();
-            break;
-          }
-        }
-      }
-
-      this.entityComponents.delete(entityId);
     }
 
     this.entityManager.destroyEntity(entityId);
+
+    for (const query of this.queries) {
+      for (const componentName of modifiedComponents) {
+        if (query.tracksComponent(componentName)) {
+          query.markDirty();
+          break;
+        }
+      }
+    }
   }
 
   getAllEntities(): readonly EntityId[] {
@@ -67,11 +60,6 @@ export class World {
     const storage = this.componentRegistry.getOrCreate(componentType);
     storage.addComponent(entityId, componentType.create(data));
 
-    const components = this.entityComponents.get(entityId);
-    if (components) {
-      components.add(componentType.name);
-    }
-
     this.invalidateQueriesForComponent(componentType);
     return true;
   }
@@ -88,10 +76,6 @@ export class World {
     const removed = storage ? storage.removeComponent(entityId) : false;
 
     if (removed) {
-      const components = this.entityComponents.get(entityId);
-      if (components) {
-        components.delete(componentType.name);
-      }
       this.invalidateQueriesForComponent(componentType);
     }
 
@@ -189,6 +173,5 @@ export class World {
     this.queries = [];
     this.componentRegistry = new ComponentRegistry();
     this.entityManager = new EntityManager();
-    this.entityComponents.clear();
   }
 }
