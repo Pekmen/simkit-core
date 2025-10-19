@@ -1,8 +1,22 @@
-import { INDEX_BITS, INDEX_MASK, MAX_ENTITY_INDEX } from "./constants.js";
+import {
+  assert,
+  GENERATION_MASK,
+  INDEX_BITS,
+  INDEX_MASK,
+  MAX_ENTITY_INDEX,
+} from "./constants.js";
 
 export type EntityId = number & { readonly __brand: "EntityId" };
 
 export function pack(index: number, gen: number): EntityId {
+  assert(
+    index >= 0 && index <= MAX_ENTITY_INDEX,
+    `Entity index ${String(index)} out of valid range [0, ${String(MAX_ENTITY_INDEX)}]`,
+  );
+  assert(
+    gen >= 0 && gen <= GENERATION_MASK,
+    `Entity generation ${String(gen)} out of valid range [0, ${String(GENERATION_MASK)}]`,
+  );
   return ((gen << INDEX_BITS) | index) as EntityId;
 }
 
@@ -23,6 +37,10 @@ export class EntityManager {
   createEntity(): EntityId {
     const recycledId = this.freeList.pop();
     if (recycledId !== undefined) {
+      assert(
+        !this.activeEntities.has(recycledId),
+        `Internal error: recycled entity ${String(recycledId)} is already active`,
+      );
       this.activeEntities.add(recycledId);
       this.activeEntitiesCache = null;
       return recycledId;
@@ -36,6 +54,10 @@ export class EntityManager {
     }
 
     const id = pack(this.nextIndex++, 0);
+    assert(
+      !this.activeEntities.has(id),
+      `Internal error: new entity ${String(id)} is already active`,
+    );
     this.activeEntities.add(id);
     this.activeEntitiesCache = null;
     return id;
@@ -47,7 +69,12 @@ export class EntityManager {
     const index = getIndex(entityId);
     const gen = getGen(entityId);
 
-    const nextId = pack(index, (gen + 1) & 0xff);
+    assert(
+      index < this.nextIndex,
+      `Internal error: destroying entity with index ${String(index)} >= nextIndex ${String(this.nextIndex)}`,
+    );
+
+    const nextId = pack(index, (gen + 1) & GENERATION_MASK);
     this.freeList.push(nextId);
 
     this.activeEntities.delete(entityId);
