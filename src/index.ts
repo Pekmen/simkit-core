@@ -8,3 +8,5 @@ export * from "./core/Query.js";
 export * from "./core/QueryConfig.js";
 export * from "./core/constants.js";
 export * from "./profiling/Profiler.js";
+export * from "./serialization/Snapshot.js";
+export * from "./serialization/ComponentSerializerRegistry.js";

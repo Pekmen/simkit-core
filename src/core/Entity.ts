@@ -28,6 +28,11 @@ export function getGen(id: EntityId): number {
   return id >>> INDEX_BITS;
 }
 
+export interface EntityManagerSnapshot {
+  nextIndex: number;
+  freeList: EntityId[];
+}
+
 export class EntityManager {
   private nextIndex = 0;
   private freeList: EntityId[] = [];
@@ -93,5 +98,19 @@ export class EntityManager {
   getAllActiveEntities(): readonly EntityId[] {
     this.activeEntitiesCache ??= Array.from(this.activeEntities);
     return this.activeEntitiesCache;
+  }
+
+  createSnapshot(): EntityManagerSnapshot {
+    return {
+      nextIndex: this.nextIndex,
+      freeList: [...this.freeList],
+    };
+  }
+
+  restoreFromSnapshot(snapshot: EntityManagerSnapshot): void {
+    this.nextIndex = snapshot.nextIndex;
+    this.freeList = [...snapshot.freeList];
+    this.activeEntities.clear();
+    this.activeEntitiesCache = null;
   }
 }
