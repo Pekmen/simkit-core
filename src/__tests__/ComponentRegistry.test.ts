@@ -1,9 +1,9 @@
 import {
   ComponentRegistry,
   ComponentStorage,
-  ComponentType,
   defineComponent,
   World,
+  type ComponentType,
 } from "../index.js";
 
 interface TestComponentA {
