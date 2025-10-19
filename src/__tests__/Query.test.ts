@@ -1,4 +1,4 @@
-import { defineComponent, Query, QueryConfig, World } from "../index.js";
+import { defineComponent, Query, World, type QueryConfig } from "../index.js";
 
 interface TestComponentA {
   x: number;

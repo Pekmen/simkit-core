@@ -1,15 +1,13 @@
-import { World } from "../index.js";
+import type { World } from "../index.js";
 
 export abstract class System {
   constructor(protected world: World) {}
 
-  init(): void {
-    /* empty */
-  }
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  init(): void {}
 
   abstract update(deltaTime: number): void;
 
-  cleanup(): void {
-    /* empty */
-  }
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  cleanup(): void {}
 }

@@ -109,10 +109,4 @@ export class ComponentStorage<T> {
   size(): number {
     return this.dense.length;
   }
-
-  clear(): void {
-    this.sparse = [];
-    this.dense = [];
-    this.entities = [];
-  }
 }

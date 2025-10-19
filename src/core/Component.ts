@@ -10,7 +10,7 @@ export function defineComponent<T>(
   return {
     name,
     create(data: Partial<T> = {}): T {
-      return Object.assign({}, defaultValues, data);
+      return { ...defaultValues, ...data };
     },
   };
 }

@@ -90,10 +90,6 @@ export class EntityManager {
     return this.activeEntities.size;
   }
 
-  getActiveEntitiesIterator(): IterableIterator<EntityId> {
-    return this.activeEntities.values();
-  }
-
   getAllActiveEntities(): readonly EntityId[] {
     this.activeEntitiesCache ??= Array.from(this.activeEntities);
     return this.activeEntitiesCache;

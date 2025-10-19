@@ -1,8 +1,8 @@
 import {
-  ComponentType,
   defineComponent,
-  QueryConfig,
   validateQueryConfig,
+  type ComponentType,
+  type QueryConfig,
 } from "../index.js";
 
 interface TestComponentA {
