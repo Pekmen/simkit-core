@@ -1,4 +1,5 @@
 import {
+  assert,
   ComponentRegistry,
   ComponentStorage,
   EntityManager,
@@ -60,6 +61,8 @@ export class World {
     componentType: ComponentType<T>,
     data?: Partial<T>,
   ): boolean {
+    assert(componentType.name !== "", "ComponentType must have a valid name");
+
     if (!this.entityManager.isEntityValid(entityId)) {
       return false;
     }
@@ -133,6 +136,10 @@ export class World {
   }
 
   addSystem(system: System): void {
+    assert(
+      !this.systems.includes(system),
+      "System is already added to this world",
+    );
     this.systems.push(system);
     system.init();
   }
@@ -166,6 +173,12 @@ export class World {
 
   createQuery(config: QueryConfig): Query {
     const query = new Query(this, config);
+
+    assert(
+      !this.queries.includes(query),
+      "Query is already registered in this world",
+    );
+
     this.queries.push(query);
 
     const trackedTypes: string[] = [];
