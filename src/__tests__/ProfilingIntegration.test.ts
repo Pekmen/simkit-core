@@ -184,8 +184,8 @@ describe("Profiling Integration", () => {
 
       const history = world.getProfiler().getFrameHistory();
       expect(history.length).toBe(3);
-      expect(history[0].frameNumber).toBe(0);
-      expect(history[2].frameNumber).toBe(2);
+      expect(history[0]?.frameNumber).toBe(0);
+      expect(history[2]?.frameNumber).toBe(2);
     });
 
     it("should categorize frame time by operation type", () => {

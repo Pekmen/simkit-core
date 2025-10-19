@@ -10,6 +10,12 @@ import {
   type QueryConfig,
 } from "../index.js";
 import { Profiler } from "../profiling/Profiler.js";
+import { ComponentSerializerRegistry } from "../serialization/ComponentSerializerRegistry.js";
+import type {
+  ComponentSerializer,
+  EntitySnapshot,
+  WorldSnapshot,
+} from "../serialization/Snapshot.js";
 
 export interface WorldConfig {
   enableProfiling?: boolean;
@@ -24,6 +30,7 @@ export class World {
   private queryIndex = new Map<string, Set<Query>>();
   private entityComponents = new Map<EntityId, Set<string>>();
   private profiler = new Profiler();
+  private serializerRegistry = new ComponentSerializerRegistry();
 
   constructor(config?: WorldConfig) {
     if (config?.enableProfiling) {
@@ -280,5 +287,92 @@ export class World {
 
   disableProfiling(): void {
     this.profiler.disable();
+  }
+
+  registerComponentSerializer<T>(
+    componentName: string,
+    serializer: ComponentSerializer<T>,
+  ): void {
+    this.serializerRegistry.register(componentName, serializer);
+  }
+
+  createSnapshot(): WorldSnapshot {
+    const entities: EntitySnapshot[] = [];
+
+    for (const entityId of this.entityManager.getAllActiveEntities()) {
+      const componentNames = this.entityComponents.get(entityId);
+      if (!componentNames) {
+        continue;
+      }
+
+      const components = new Map<string, Record<string, unknown>>();
+
+      for (const componentName of componentNames) {
+        const storage = this.componentRegistry.get({
+          name: componentName,
+        } as ComponentType<unknown>);
+
+        if (!storage) {
+          continue;
+        }
+
+        const component = storage.getComponent(entityId);
+        if (component === undefined) {
+          continue;
+        }
+
+        const serialized = this.serializerRegistry.serialize(
+          componentName,
+          component,
+        );
+        components.set(componentName, serialized);
+      }
+
+      entities.push({
+        id: entityId,
+        components,
+      });
+    }
+
+    return {
+      entities,
+      entityManagerState: this.entityManager.createSnapshot(),
+    };
+  }
+
+  restoreFromSnapshot(snapshot: WorldSnapshot): void {
+    this.destroy();
+
+    this.entityManager.restoreFromSnapshot(snapshot.entityManagerState);
+
+    for (const entitySnapshot of snapshot.entities) {
+      const entityId = entitySnapshot.id;
+
+      if (!this.entityManager.isEntityValid(entityId)) {
+        this.entityManager.createEntity();
+      }
+
+      const components = new Set<string>();
+      this.entityComponents.set(entityId, components);
+
+      for (const [componentName, serializedData] of entitySnapshot.components) {
+        const deserialized = this.serializerRegistry.deserialize(
+          componentName,
+          serializedData,
+        );
+
+        const storage = this.componentRegistry.getOrCreate({
+          name: componentName,
+          create: () => deserialized,
+        } as ComponentType<unknown>);
+
+        storage.addComponent(entityId, deserialized);
+        components.add(componentName);
+      }
+    }
+
+    for (const query of this.queries) {
+      query.markDirty();
+    }
   }
 }
