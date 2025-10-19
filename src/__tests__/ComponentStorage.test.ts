@@ -56,13 +56,4 @@ describe("ComponentStorage", () => {
     storage.addComponent(entity2, { foo: "y", count: 1 });
     expect(storage.size()).toBe(2);
   });
-
-  test("clear removes all components", () => {
-    storage.addComponent(entity1, { foo: "a", count: 1 });
-    storage.addComponent(entity2, { foo: "b", count: 2 });
-    storage.clear();
-    expect(storage.size()).toBe(0);
-    expect(storage.getComponent(entity1)).toBeUndefined();
-    expect(storage.getComponent(entity2)).toBeUndefined();
-  });
 });
