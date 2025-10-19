@@ -13,6 +13,7 @@ export class World {
   private componentRegistry = new ComponentRegistry();
   private systems: System[] = [];
   private queries: Query[] = [];
+  private queryIndex = new Map<string, Set<Query>>();
 
   createEntity(): EntityId {
     return this.entityManager.createEntity();
@@ -86,10 +87,6 @@ export class World {
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): T | undefined {
-    if (!this.entityManager.isEntityValid(entityId)) {
-      return undefined;
-    }
-
     return this.componentRegistry.get(componentType)?.getComponent(entityId);
   }
 
@@ -97,10 +94,6 @@ export class World {
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): boolean {
-    if (!this.entityManager.isEntityValid(entityId)) {
-      return false;
-    }
-
     return (
       this.componentRegistry.get(componentType)?.hasComponent(entityId) ?? false
     );
@@ -147,6 +140,27 @@ export class World {
   createQuery(config: QueryConfig): Query {
     const query = new Query(this, config);
     this.queries.push(query);
+
+    const trackedTypes: string[] = [];
+    if (config.with) {
+      trackedTypes.push(...config.with.map((c) => c.name));
+    }
+    if (config.without) {
+      trackedTypes.push(...config.without.map((c) => c.name));
+    }
+    if (config.oneOf) {
+      trackedTypes.push(...config.oneOf.map((c) => c.name));
+    }
+
+    for (const componentType of trackedTypes) {
+      let querySet = this.queryIndex.get(componentType);
+      if (!querySet) {
+        querySet = new Set();
+        this.queryIndex.set(componentType, querySet);
+      }
+      querySet.add(query);
+    }
+
     return query;
   }
 
@@ -155,14 +169,20 @@ export class World {
     if (index === -1) return false;
 
     this.queries.splice(index, 1);
+
+    for (const querySet of this.queryIndex.values()) {
+      querySet.delete(query);
+    }
+
     return true;
   }
 
   private invalidateQueriesForComponent<T>(
     componentType: ComponentType<T>,
   ): void {
-    for (const query of this.queries) {
-      if (query.tracksComponent(componentType.name)) {
+    const querySet = this.queryIndex.get(componentType.name);
+    if (querySet) {
+      for (const query of querySet) {
         query.markDirty();
       }
     }
@@ -171,6 +191,7 @@ export class World {
   destroy(): void {
     this.clearSystems();
     this.queries = [];
+    this.queryIndex.clear();
     this.componentRegistry = new ComponentRegistry();
     this.entityManager = new EntityManager();
   }

@@ -9,9 +9,10 @@ import {
 export class Query {
   private world: World;
   private config: QueryConfig;
-  private cachedResult: QueryResult | null = null;
+  private cachedResult: EntityId[] | null = null;
   private isDirty = true;
   private trackedComponentTypes: Set<string>;
+  private optimalComponentType: string | null = null;
 
   constructor(world: World, config: QueryConfig) {
     validateQueryConfig(config);
@@ -45,7 +46,11 @@ export class Query {
       return this.cachedResult;
     }
 
-    const matchingEntities: EntityId[] = [];
+    if (this.cachedResult === null) {
+      this.cachedResult = [];
+    } else {
+      this.cachedResult.length = 0;
+    }
 
     const entitiesToCheck = this.getOptimalEntitySet();
 
@@ -79,10 +84,9 @@ export class Query {
         }
       }
 
-      matchingEntities.push(entity);
+      this.cachedResult.push(entity);
     }
 
-    this.cachedResult = matchingEntities;
     this.isDirty = false;
 
     return this.cachedResult;
@@ -93,8 +97,21 @@ export class Query {
       return this.world.getAllEntities();
     }
 
+    if (this.optimalComponentType) {
+      const componentType = this.config.with.find(
+        (c) => c.name === this.optimalComponentType,
+      );
+      if (componentType) {
+        const entities = this.world.getEntitiesWithComponent(componentType);
+        if (entities) {
+          return entities;
+        }
+      }
+    }
+
     let smallestSet: readonly EntityId[] | undefined;
     let smallestSize = Infinity;
+    let smallestType: string | null = null;
 
     for (const componentType of this.config.with) {
       const entities = this.world.getEntitiesWithComponent(componentType);
@@ -105,9 +122,11 @@ export class Query {
       if (entities.length < smallestSize) {
         smallestSize = entities.length;
         smallestSet = entities;
+        smallestType = componentType.name;
       }
     }
 
+    this.optimalComponentType = smallestType;
     return smallestSet ?? this.world.getAllEntities();
   }
 }
