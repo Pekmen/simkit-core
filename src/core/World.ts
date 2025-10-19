@@ -1,11 +1,12 @@
 import {
   ComponentRegistry,
-  ComponentType,
-  EntityId,
+  ComponentStorage,
   EntityManager,
   Query,
-  QueryConfig,
   System,
+  type ComponentType,
+  type EntityId,
+  type QueryConfig,
 } from "../index.js";
 
 export class World {
@@ -14,31 +15,36 @@ export class World {
   private systems: System[] = [];
   private queries: Query[] = [];
   private queryIndex = new Map<string, Set<Query>>();
+  private entityComponents = new Map<EntityId, Set<string>>();
 
   createEntity(): EntityId {
     return this.entityManager.createEntity();
   }
 
   destroyEntity(entityId: EntityId): void {
-    const modifiedComponents = new Set<string>();
+    const componentNames = this.entityComponents.get(entityId);
 
-    for (const [componentName, storage] of this.componentRegistry.entries()) {
-      if (storage.hasComponent(entityId)) {
-        storage.removeComponent(entityId);
-        modifiedComponents.add(componentName);
+    if (componentNames) {
+      for (const componentName of componentNames) {
+        const storage = this.componentRegistry.get({
+          name: componentName,
+        } as ComponentType<unknown>);
+        storage?.removeComponent(entityId);
       }
+
+      for (const query of this.queries) {
+        for (const componentName of componentNames) {
+          if (query.tracksComponent(componentName)) {
+            query.markDirty();
+            break;
+          }
+        }
+      }
+
+      this.entityComponents.delete(entityId);
     }
 
     this.entityManager.destroyEntity(entityId);
-
-    for (const query of this.queries) {
-      for (const componentName of modifiedComponents) {
-        if (query.tracksComponent(componentName)) {
-          query.markDirty();
-          break;
-        }
-      }
-    }
   }
 
   getAllEntities(): readonly EntityId[] {
@@ -61,6 +67,13 @@ export class World {
     const storage = this.componentRegistry.getOrCreate(componentType);
     storage.addComponent(entityId, componentType.create(data));
 
+    let components = this.entityComponents.get(entityId);
+    if (!components) {
+      components = new Set();
+      this.entityComponents.set(entityId, components);
+    }
+    components.add(componentType.name);
+
     this.invalidateQueriesForComponent(componentType);
     return true;
   }
@@ -77,6 +90,14 @@ export class World {
     const removed = storage ? storage.removeComponent(entityId) : false;
 
     if (removed) {
+      const components = this.entityComponents.get(entityId);
+      if (components) {
+        components.delete(componentType.name);
+        if (components.size === 0) {
+          this.entityComponents.delete(entityId);
+        }
+      }
+
       this.invalidateQueriesForComponent(componentType);
     }
 
@@ -103,6 +124,12 @@ export class World {
     componentType: ComponentType<T>,
   ): readonly EntityId[] | undefined {
     return this.componentRegistry.get(componentType)?.getAllEntities();
+  }
+
+  getComponentStorage<T>(
+    componentType: ComponentType<T>,
+  ): ComponentStorage<T> | undefined {
+    return this.componentRegistry.get(componentType);
   }
 
   addSystem(system: System): void {
@@ -192,6 +219,7 @@ export class World {
     this.clearSystems();
     this.queries = [];
     this.queryIndex.clear();
+    this.entityComponents.clear();
     this.componentRegistry = new ComponentRegistry();
     this.entityManager = new EntityManager();
   }

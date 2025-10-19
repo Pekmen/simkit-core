@@ -1,4 +1,4 @@
-import { EntityId, getIndex } from "../index.js";
+import { getIndex, type EntityId } from "../index.js";
 
 export class ComponentStorage<T> {
   private sparse: (number | undefined)[] = [];
@@ -78,11 +78,5 @@ export class ComponentStorage<T> {
 
   size(): number {
     return this.dense.length;
-  }
-
-  clear(): void {
-    this.sparse = [];
-    this.dense = [];
-    this.entities = [];
   }
 }

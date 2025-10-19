@@ -1,9 +1,10 @@
 import {
-  EntityId,
-  QueryConfig,
-  QueryResult,
+  ComponentStorage,
   validateQueryConfig,
   World,
+  type EntityId,
+  type QueryConfig,
+  type QueryResult,
 } from "../index.js";
 
 export class Query {
@@ -12,7 +13,11 @@ export class Query {
   private cachedResult: EntityId[] | null = null;
   private isDirty = true;
   private trackedComponentTypes: Set<string>;
-  private optimalComponentType: string | null = null;
+  private withStorages: (ComponentStorage<unknown> | undefined)[] | null = null;
+  private withoutStorages: (ComponentStorage<unknown> | undefined)[] | null =
+    null;
+  private oneOfStorages: (ComponentStorage<unknown> | undefined)[] | null =
+    null;
 
   constructor(world: World, config: QueryConfig) {
     validateQueryConfig(config);
@@ -20,17 +25,23 @@ export class Query {
     this.world = world;
     this.config = config;
 
-    const tracked: string[] = [];
+    this.trackedComponentTypes = new Set<string>();
+
     if (config.with) {
-      tracked.push(...config.with.map((c) => c.name));
+      for (const ct of config.with) {
+        this.trackedComponentTypes.add(ct.name);
+      }
     }
     if (config.without) {
-      tracked.push(...config.without.map((c) => c.name));
+      for (const ct of config.without) {
+        this.trackedComponentTypes.add(ct.name);
+      }
     }
     if (config.oneOf) {
-      tracked.push(...config.oneOf.map((c) => c.name));
+      for (const ct of config.oneOf) {
+        this.trackedComponentTypes.add(ct.name);
+      }
     }
-    this.trackedComponentTypes = new Set(tracked);
   }
 
   markDirty(): void {
@@ -46,6 +57,24 @@ export class Query {
       return this.cachedResult;
     }
 
+    if (this.isDirty) {
+      if (this.config.with) {
+        this.withStorages = this.config.with.map((ct) =>
+          this.world.getComponentStorage(ct),
+        );
+      }
+      if (this.config.without) {
+        this.withoutStorages = this.config.without.map((ct) =>
+          this.world.getComponentStorage(ct),
+        );
+      }
+      if (this.config.oneOf) {
+        this.oneOfStorages = this.config.oneOf.map((ct) =>
+          this.world.getComponentStorage(ct),
+        );
+      }
+    }
+
     if (this.cachedResult === null) {
       this.cachedResult = [];
     } else {
@@ -55,26 +84,26 @@ export class Query {
     const entitiesToCheck = this.getOptimalEntitySet();
 
     entityLoop: for (const entity of entitiesToCheck) {
-      if (this.config.with) {
-        for (const componentType of this.config.with) {
-          if (!this.world.hasComponent(entity, componentType)) {
+      if (this.withStorages) {
+        for (const storage of this.withStorages) {
+          if (!storage?.hasComponent(entity)) {
             continue entityLoop;
           }
         }
       }
 
-      if (this.config.without) {
-        for (const componentType of this.config.without) {
-          if (this.world.hasComponent(entity, componentType)) {
+      if (this.withoutStorages) {
+        for (const storage of this.withoutStorages) {
+          if (storage?.hasComponent(entity)) {
             continue entityLoop;
           }
         }
       }
 
-      if (this.config.oneOf) {
+      if (this.oneOfStorages) {
         let hasOneOf = false;
-        for (const componentType of this.config.oneOf) {
-          if (this.world.hasComponent(entity, componentType)) {
+        for (const storage of this.oneOfStorages) {
+          if (storage?.hasComponent(entity)) {
             hasOneOf = true;
             break;
           }
@@ -97,21 +126,8 @@ export class Query {
       return this.world.getAllEntities();
     }
 
-    if (this.optimalComponentType) {
-      const componentType = this.config.with.find(
-        (c) => c.name === this.optimalComponentType,
-      );
-      if (componentType) {
-        const entities = this.world.getEntitiesWithComponent(componentType);
-        if (entities) {
-          return entities;
-        }
-      }
-    }
-
     let smallestSet: readonly EntityId[] | undefined;
     let smallestSize = Infinity;
-    let smallestType: string | null = null;
 
     for (const componentType of this.config.with) {
       const entities = this.world.getEntitiesWithComponent(componentType);
@@ -122,11 +138,9 @@ export class Query {
       if (entities.length < smallestSize) {
         smallestSize = entities.length;
         smallestSet = entities;
-        smallestType = componentType.name;
       }
     }
 
-    this.optimalComponentType = smallestType;
     return smallestSet ?? this.world.getAllEntities();
   }
 }

@@ -16,7 +16,6 @@
     "dist",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "examples/**/*",
-    "jest.config.ts"
+    "examples/**/*"
   ]
 }
