@@ -9,6 +9,12 @@ import {
   type EntityId,
   type QueryConfig,
 } from "../index.js";
+import { Profiler } from "../profiling/Profiler.js";
+
+export interface WorldConfig {
+  enableProfiling?: boolean;
+  maxFrameHistory?: number;
+}
 
 export class World {
   private entityManager = new EntityManager();
@@ -17,6 +23,16 @@ export class World {
   private queries: Query[] = [];
   private queryIndex = new Map<string, Set<Query>>();
   private entityComponents = new Map<EntityId, Set<string>>();
+  private profiler = new Profiler();
+
+  constructor(config?: WorldConfig) {
+    if (config?.enableProfiling) {
+      this.profiler.enable();
+    }
+    if (config?.maxFrameHistory !== undefined) {
+      this.profiler.setMaxFrameHistory(config.maxFrameHistory);
+    }
+  }
 
   createEntity(): EntityId {
     return this.entityManager.createEntity();
@@ -61,50 +77,60 @@ export class World {
     componentType: ComponentType<T>,
     data?: Partial<T>,
   ): boolean {
-    assert(componentType.name !== "", "ComponentType must have a valid name");
+    this.profiler.start("component:add");
+    try {
+      assert(componentType.name !== "", "ComponentType must have a valid name");
 
-    if (!this.entityManager.isEntityValid(entityId)) {
-      return false;
+      if (!this.entityManager.isEntityValid(entityId)) {
+        return false;
+      }
+
+      const storage = this.componentRegistry.getOrCreate(componentType);
+      storage.addComponent(entityId, componentType.create(data));
+
+      let components = this.entityComponents.get(entityId);
+      if (!components) {
+        components = new Set();
+        this.entityComponents.set(entityId, components);
+      }
+      components.add(componentType.name);
+
+      this.invalidateQueriesForComponent(componentType);
+      return true;
+    } finally {
+      this.profiler.end("component:add");
     }
-
-    const storage = this.componentRegistry.getOrCreate(componentType);
-    storage.addComponent(entityId, componentType.create(data));
-
-    let components = this.entityComponents.get(entityId);
-    if (!components) {
-      components = new Set();
-      this.entityComponents.set(entityId, components);
-    }
-    components.add(componentType.name);
-
-    this.invalidateQueriesForComponent(componentType);
-    return true;
   }
 
   removeComponent<T>(
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): boolean {
-    if (!this.entityManager.isEntityValid(entityId)) {
-      return false;
-    }
-
-    const storage = this.componentRegistry.get(componentType);
-    const removed = storage ? storage.removeComponent(entityId) : false;
-
-    if (removed) {
-      const components = this.entityComponents.get(entityId);
-      if (components) {
-        components.delete(componentType.name);
-        if (components.size === 0) {
-          this.entityComponents.delete(entityId);
-        }
+    this.profiler.start("component:remove");
+    try {
+      if (!this.entityManager.isEntityValid(entityId)) {
+        return false;
       }
 
-      this.invalidateQueriesForComponent(componentType);
-    }
+      const storage = this.componentRegistry.get(componentType);
+      const removed = storage ? storage.removeComponent(entityId) : false;
 
-    return removed;
+      if (removed) {
+        const components = this.entityComponents.get(entityId);
+        if (components) {
+          components.delete(componentType.name);
+          if (components.size === 0) {
+            this.entityComponents.delete(entityId);
+          }
+        }
+
+        this.invalidateQueriesForComponent(componentType);
+      }
+
+      return removed;
+    } finally {
+      this.profiler.end("component:remove");
+    }
   }
 
   getComponent<T>(
@@ -167,8 +193,15 @@ export class World {
 
   update(deltaTime: number): void {
     for (const system of this.systems) {
-      system.update(deltaTime);
+      const systemName = `system:${system.constructor.name}`;
+      this.profiler.start(systemName);
+      try {
+        system.update(deltaTime);
+      } finally {
+        this.profiler.end(systemName);
+      }
     }
+    this.profiler.endFrame();
   }
 
   createQuery(config: QueryConfig): Query {
@@ -235,5 +268,17 @@ export class World {
     this.entityComponents.clear();
     this.componentRegistry = new ComponentRegistry();
     this.entityManager = new EntityManager();
+  }
+
+  getProfiler(): Profiler {
+    return this.profiler;
+  }
+
+  enableProfiling(): void {
+    this.profiler.enable();
+  }
+
+  disableProfiling(): void {
+    this.profiler.disable();
   }
 }

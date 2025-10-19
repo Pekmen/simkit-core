@@ -57,68 +57,75 @@ export class Query {
       return this.cachedResult;
     }
 
-    if (this.isDirty) {
-      if (this.config.with) {
-        this.withStorages = this.config.with.map((ct) =>
-          this.world.getComponentStorage(ct),
-        );
-      }
-      if (this.config.without) {
-        this.withoutStorages = this.config.without.map((ct) =>
-          this.world.getComponentStorage(ct),
-        );
-      }
-      if (this.config.oneOf) {
-        this.oneOfStorages = this.config.oneOf.map((ct) =>
-          this.world.getComponentStorage(ct),
-        );
-      }
-    }
+    const profiler = this.world.getProfiler();
+    profiler.start("query:execute");
 
-    if (this.cachedResult === null) {
-      this.cachedResult = [];
-    } else {
-      this.cachedResult.length = 0;
-    }
+    try {
+      if (this.isDirty) {
+        if (this.config.with) {
+          this.withStorages = this.config.with.map((ct) =>
+            this.world.getComponentStorage(ct),
+          );
+        }
+        if (this.config.without) {
+          this.withoutStorages = this.config.without.map((ct) =>
+            this.world.getComponentStorage(ct),
+          );
+        }
+        if (this.config.oneOf) {
+          this.oneOfStorages = this.config.oneOf.map((ct) =>
+            this.world.getComponentStorage(ct),
+          );
+        }
+      }
 
-    const entitiesToCheck = this.getOptimalEntitySet();
+      if (this.cachedResult === null) {
+        this.cachedResult = [];
+      } else {
+        this.cachedResult.length = 0;
+      }
 
-    entityLoop: for (const entity of entitiesToCheck) {
-      if (this.withStorages) {
-        for (const storage of this.withStorages) {
-          if (!storage?.hasComponent(entity)) {
+      const entitiesToCheck = this.getOptimalEntitySet();
+
+      entityLoop: for (const entity of entitiesToCheck) {
+        if (this.withStorages) {
+          for (const storage of this.withStorages) {
+            if (!storage?.hasComponent(entity)) {
+              continue entityLoop;
+            }
+          }
+        }
+
+        if (this.withoutStorages) {
+          for (const storage of this.withoutStorages) {
+            if (storage?.hasComponent(entity)) {
+              continue entityLoop;
+            }
+          }
+        }
+
+        if (this.oneOfStorages) {
+          let hasOneOf = false;
+          for (const storage of this.oneOfStorages) {
+            if (storage?.hasComponent(entity)) {
+              hasOneOf = true;
+              break;
+            }
+          }
+          if (!hasOneOf) {
             continue entityLoop;
           }
         }
+
+        this.cachedResult.push(entity);
       }
 
-      if (this.withoutStorages) {
-        for (const storage of this.withoutStorages) {
-          if (storage?.hasComponent(entity)) {
-            continue entityLoop;
-          }
-        }
-      }
+      this.isDirty = false;
 
-      if (this.oneOfStorages) {
-        let hasOneOf = false;
-        for (const storage of this.oneOfStorages) {
-          if (storage?.hasComponent(entity)) {
-            hasOneOf = true;
-            break;
-          }
-        }
-        if (!hasOneOf) {
-          continue entityLoop;
-        }
-      }
-
-      this.cachedResult.push(entity);
+      return this.cachedResult;
+    } finally {
+      profiler.end("query:execute");
     }
-
-    this.isDirty = false;
-
-    return this.cachedResult;
   }
 
   private getOptimalEntitySet(): Iterable<EntityId> {

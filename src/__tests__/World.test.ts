@@ -439,4 +439,53 @@ describe("World.createQuery", () => {
       expect(queryBefore.execute()).toContain(entity);
     });
   });
+
+  describe("WorldConfig", () => {
+    test("should create world with profiling disabled by default", () => {
+      const defaultWorld = new World();
+      expect(defaultWorld.getProfiler().isEnabled()).toBe(false);
+    });
+
+    test("should create world with profiling enabled via config", () => {
+      const profiledWorld = new World({ enableProfiling: true });
+      expect(profiledWorld.getProfiler().isEnabled()).toBe(true);
+    });
+
+    test("should set custom max frame history via config", () => {
+      const customWorld = new World({ maxFrameHistory: 120 });
+      customWorld.enableProfiling();
+
+      customWorld.addSystem(new TestSystem(customWorld));
+
+      for (let i = 0; i < 100; i++) {
+        customWorld.update(16.67);
+      }
+
+      const history = customWorld.getProfiler().getFrameHistory();
+      expect(history.length).toBe(100);
+    });
+
+    test("should accept both config options together", () => {
+      const configuredWorld = new World({
+        enableProfiling: true,
+        maxFrameHistory: 30,
+      });
+
+      expect(configuredWorld.getProfiler().isEnabled()).toBe(true);
+
+      configuredWorld.addSystem(new TestSystem(configuredWorld));
+
+      for (let i = 0; i < 50; i++) {
+        configuredWorld.update(16.67);
+      }
+
+      const history = configuredWorld.getProfiler().getFrameHistory();
+      expect(history.length).toBe(30);
+    });
+
+    test("should work with empty config object", () => {
+      const emptyConfigWorld = new World({});
+      expect(emptyConfigWorld.getProfiler().isEnabled()).toBe(false);
+    });
+  });
 });
