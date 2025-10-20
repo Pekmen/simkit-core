@@ -77,4 +77,25 @@ describe("System", () => {
     world.destroy();
     expect(system.isCleanedUp).toBe(true);
   });
+
+  test("init should not be called on construction", () => {
+    const newSystem = new TestSystem(world);
+    expect(newSystem.isInitialized).toBe(false);
+  });
+
+  test("update should receive correct deltaTime", () => {
+    world.addSystem(system);
+    world.update(100.5);
+    expect(system.lastDelta).toBe(100.5);
+  });
+
+  test("system can access world", () => {
+    expect(system.getWorld()).toBe(world);
+  });
+
+  test("cleanup should not be called until system is removed", () => {
+    world.addSystem(system);
+    world.update(16);
+    expect(system.isCleanedUp).toBe(false);
+  });
 });

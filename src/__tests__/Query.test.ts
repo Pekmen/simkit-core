@@ -310,5 +310,85 @@ describe("Query", () => {
       result = query.execute();
       expect(result.length).toBe(0);
     });
+
+    test("should handle query with all constraint types being empty at entity level", () => {
+      const query = world.createQuery({
+        with: [ComponentA],
+        without: [ComponentB],
+        oneOf: [ComponentC, ComponentD],
+      });
+
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentB);
+
+      expect(query.execute()).not.toContain(entity);
+    });
+
+    test("should handle large numbers of entities efficiently", () => {
+      const entities = [];
+      for (let i = 0; i < 1000; i++) {
+        const entity = world.createEntity();
+        world.addComponent(entity, ComponentA);
+        entities.push(entity);
+      }
+
+      const query = world.createQuery({ with: [ComponentA] });
+      const result = query.execute();
+
+      expect(result.length).toBe(1000);
+    });
+
+    test("query caching should return same array reference when not dirty", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA);
+
+      const query = world.createQuery({ with: [ComponentA] });
+      const result1 = query.execute();
+      const result2 = query.execute();
+
+      expect(result1).toBe(result2);
+    });
+
+    test("query should update results after becoming dirty", () => {
+      const entity1 = world.createEntity();
+      world.addComponent(entity1, ComponentA);
+
+      const query = world.createQuery({ with: [ComponentA] });
+      const result1 = query.execute();
+      expect(result1.length).toBe(1);
+
+      const entity2 = world.createEntity();
+      world.addComponent(entity2, ComponentA);
+
+      const result2 = query.execute();
+      expect(result2.length).toBe(2);
+      expect(result2).toContain(entity1);
+      expect(result2).toContain(entity2);
+    });
+  });
+
+  describe("query optimization", () => {
+    test("should iterate smallest component set", () => {
+      for (let i = 0; i < 100; i++) {
+        const entity = world.createEntity();
+        world.addComponent(entity, ComponentA);
+      }
+
+      for (let i = 0; i < 10; i++) {
+        const entity = world.createEntity();
+        world.addComponent(entity, ComponentB);
+      }
+
+      for (let i = 0; i < 5; i++) {
+        const entity = world.createEntity();
+        world.addComponent(entity, ComponentA);
+        world.addComponent(entity, ComponentB);
+      }
+
+      const query = world.createQuery({ with: [ComponentA, ComponentB] });
+      const result = query.execute();
+
+      expect(result.length).toBe(5);
+    });
   });
 });

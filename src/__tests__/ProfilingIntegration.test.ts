@@ -277,4 +277,59 @@ describe("Profiling Integration", () => {
       expect(world.getProfiler().getFrameHistory().length).toBe(0);
     });
   });
+
+  describe("Profiler configuration", () => {
+    it("should respect max frame history from world config", () => {
+      const configuredWorld = new World({
+        enableProfiling: true,
+        maxFrameHistory: 5,
+      });
+
+      class TestSystem extends System {
+        update(_deltaTime: number): void {}
+      }
+
+      configuredWorld.addSystem(new TestSystem(configuredWorld));
+
+      for (let i = 0; i < 10; i++) {
+        configuredWorld.update(16.67);
+      }
+
+      expect(configuredWorld.getProfiler().getFrameHistory().length).toBe(5);
+    });
+
+    it("should allow enabling profiling after world creation", () => {
+      const newWorld = new World();
+      expect(newWorld.getProfiler().isEnabled()).toBe(false);
+
+      newWorld.enableProfiling();
+      expect(newWorld.getProfiler().isEnabled()).toBe(true);
+    });
+
+    it("should allow disabling profiling after world creation", () => {
+      const newWorld = new World({ enableProfiling: true });
+      expect(newWorld.getProfiler().isEnabled()).toBe(true);
+
+      newWorld.disableProfiling();
+      expect(newWorld.getProfiler().isEnabled()).toBe(false);
+    });
+  });
+
+  describe("Query profiling edge cases", () => {
+    it("should profile cache hits and misses", () => {
+      const Position = defineComponent("Position", { x: 0, y: 0 });
+
+      const entity = world.createEntity();
+      world.addComponent(entity, Position);
+
+      const query = world.createQuery({ with: [Position] });
+
+      query.execute();
+      query.execute();
+
+      const stats = world.getProfiler().getStats("query:execute");
+      expect(stats).toBeDefined();
+      expect(stats!.count).toBeGreaterThan(0);
+    });
+  });
 });

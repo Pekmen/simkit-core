@@ -36,4 +36,23 @@ describe("defineComponent", () => {
   test("should have the correct component name", () => {
     expect(AComponent.name).toBe("A");
   });
+
+  test("should handle empty partial override", () => {
+    const comp = AComponent.create({});
+    expect(comp).toEqual(defaultA);
+  });
+
+  test("should create independent instances", () => {
+    const comp1 = AComponent.create({ foo: "first" });
+    const comp2 = AComponent.create({ foo: "second" });
+
+    expect(comp1.foo).toBe("first");
+    expect(comp2.foo).toBe("second");
+    expect(comp1).not.toBe(comp2);
+  });
+
+  test("should handle undefined in partial data", () => {
+    const comp = AComponent.create({ foo: undefined });
+    expect(comp.foo).toBeUndefined();
+  });
 });

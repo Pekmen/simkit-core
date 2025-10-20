@@ -56,4 +56,63 @@ describe("ComponentStorage", () => {
     storage.addComponent(entity2, { foo: "y", count: 1 });
     expect(storage.size()).toBe(2);
   });
+
+  test("updating component via addComponent", () => {
+    storage.addComponent(entity1, { foo: "initial", count: 1 });
+    expect(storage.getComponent(entity1)).toEqual({ foo: "initial", count: 1 });
+
+    storage.addComponent(entity1, { foo: "updated", count: 2 });
+    expect(storage.getComponent(entity1)).toEqual({ foo: "updated", count: 2 });
+    expect(storage.size()).toBe(1);
+  });
+
+  test("swap and pop during removal maintains data integrity", () => {
+    const entity3 = world.createEntity();
+
+    storage.addComponent(entity1, { foo: "first", count: 1 });
+    storage.addComponent(entity2, { foo: "second", count: 2 });
+    storage.addComponent(entity3, { foo: "third", count: 3 });
+
+    storage.removeComponent(entity1);
+
+    expect(storage.hasComponent(entity1)).toBe(false);
+    expect(storage.hasComponent(entity2)).toBe(true);
+    expect(storage.hasComponent(entity3)).toBe(true);
+    expect(storage.getComponent(entity2)).toEqual({ foo: "second", count: 2 });
+    expect(storage.getComponent(entity3)).toEqual({ foo: "third", count: 3 });
+    expect(storage.size()).toBe(2);
+  });
+
+  test("removing last component", () => {
+    storage.addComponent(entity1, { foo: "only", count: 1 });
+    expect(storage.size()).toBe(1);
+
+    storage.removeComponent(entity1);
+    expect(storage.size()).toBe(0);
+    expect(storage.hasComponent(entity1)).toBe(false);
+  });
+
+  test("getAllComponents returns empty array initially", () => {
+    expect(storage.getAllComponents()).toEqual([]);
+  });
+
+  test("getAllEntities returns empty array initially", () => {
+    expect(storage.getAllEntities()).toEqual([]);
+  });
+
+  test("getComponent returns undefined for non-existent entity", () => {
+    const nonExistentEntity = 999 as ReturnType<World["createEntity"]>;
+    expect(storage.getComponent(nonExistentEntity)).toBeUndefined();
+  });
+
+  test("component arrays stay synchronized", () => {
+    storage.addComponent(entity1, { foo: "a", count: 1 });
+    storage.addComponent(entity2, { foo: "b", count: 2 });
+
+    const components = storage.getAllComponents();
+    const entities = storage.getAllEntities();
+
+    expect(components.length).toBe(entities.length);
+    expect(components.length).toBe(storage.size());
+  });
 });
