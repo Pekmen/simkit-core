@@ -83,6 +83,7 @@ npm run start examples/basic.ts
 - 🧩 **Simple API**: Easy to learn and use
 - 🔧 **Flexible**: Supports complex component relationships
 - 📦 **Lightweight**: Minimal dependencies and small bundle size
+- 💾 **Serialization**: Built-in save/load functionality for persistent game states
 
 ## Quick Start
 
@@ -196,6 +197,55 @@ class HealthSystem extends System {
   }
 }
 ```
+
+### Serialization
+
+Save and load your entire game state with built-in JSON serialization.
+
+```typescript
+import { World, defineComponent } from "simkit-core";
+
+// Define components
+const Position = defineComponent("Position", { x: 0, y: 0 });
+const Health = defineComponent("Health", { hp: 100 });
+
+// Create and populate world
+const world = new World();
+const entity = world.createEntity();
+world.addComponent(entity, Position, { x: 100, y: 200 });
+world.addComponent(entity, Health, { hp: 80 });
+
+// SAVE: Serialize world to JSON
+const snapshot = world.toJSON();
+const jsonString = JSON.stringify(snapshot);
+
+// Save to localStorage (browser)
+localStorage.setItem("gameState", jsonString);
+
+// Or save to file (Node.js)
+// fs.writeFileSync('savegame.json', jsonString);
+
+// LOAD: Deserialize world from JSON
+const savedData = localStorage.getItem("gameState");
+if (savedData) {
+  // Important: Provide all component types used in the saved world
+  const restoredWorld = World.fromJSON(savedData, [Position, Health]);
+
+  // All entities and components are restored
+  console.log(restoredWorld.getEntityCount()); // Same as before
+  console.log(restoredWorld.getComponent(entity, Position)); // { x: 100, y: 200 }
+}
+```
+
+**Key Points:**
+
+- **Systems and queries are NOT serialized** - they're runtime logic that should be recreated after loading
+- **Component types must be provided** during deserialization - pass an array of all ComponentType objects
+- **Entity IDs are preserved** - references to entities remain valid across save/load
+- **Generation counters are maintained** - prevents stale entity reference bugs
+- **Format is human-readable JSON** - easy to debug and inspect save files
+
+See `examples/serialization.ts` for a complete example with multiple entities and components.
 
 ## License
 

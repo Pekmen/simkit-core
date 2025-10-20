@@ -1,4 +1,5 @@
 import { INDEX_BITS, INDEX_MASK, MAX_ENTITY_INDEX } from "./constants.js";
+import type { EntityManagerSnapshot } from "./serialization/types.js";
 
 export type EntityId = number & { readonly __brand: "EntityId" };
 
@@ -66,5 +67,22 @@ export class EntityManager {
   getAllActiveEntities(): readonly EntityId[] {
     this.activeEntitiesCache ??= Array.from(this.activeEntities);
     return this.activeEntitiesCache;
+  }
+
+  toJSON(): EntityManagerSnapshot {
+    return {
+      nextIndex: this.nextIndex,
+      activeEntities: Array.from(this.activeEntities),
+      freeList: [...this.freeList],
+    };
+  }
+
+  static fromJSON(snapshot: EntityManagerSnapshot): EntityManager {
+    const manager = new EntityManager();
+    manager.nextIndex = snapshot.nextIndex;
+    manager.activeEntities = new Set(snapshot.activeEntities);
+    manager.freeList = [...snapshot.freeList];
+    manager.activeEntitiesCache = null;
+    return manager;
   }
 }

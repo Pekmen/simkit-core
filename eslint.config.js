@@ -17,7 +17,32 @@ export default defineConfig([
     ],
   },
   {
+    files: ["examples/**/*.ts"],
+    plugins: { "@typescript-eslint": typescriptEslint },
+    extends: [
+      ...tseslint.configs.recommendedTypeChecked,
+      ...tseslint.configs.strictTypeChecked,
+      ...tseslint.configs.stylisticTypeChecked,
+    ],
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ["eslint.config.js"],
+          defaultProject: "./tsconfig.json",
+        },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/restrict-template-expressions": "off",
+    },
+  },
+  {
     files: ["**/*.ts"],
+    ignores: ["examples/**/*.ts"],
     plugins: { "@typescript-eslint": typescriptEslint },
     extends: [
       ...tseslint.configs.recommendedTypeChecked,

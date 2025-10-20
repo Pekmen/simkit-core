@@ -8,6 +8,10 @@ import {
   type EntityId,
   type QueryConfig,
 } from "../index.js";
+import {
+  SERIALIZATION_VERSION,
+  type WorldSnapshot,
+} from "./serialization/types.js";
 
 export class World {
   private entityManager = new EntityManager();
@@ -213,6 +217,50 @@ export class World {
         query.markDirty();
       }
     }
+  }
+
+  toJSON(): WorldSnapshot {
+    const entityComponentsArray: [EntityId, string[]][] = [];
+    for (const [entityId, componentNames] of this.entityComponents.entries()) {
+      entityComponentsArray.push([entityId, Array.from(componentNames)]);
+    }
+
+    return {
+      version: SERIALIZATION_VERSION,
+      entityManager: this.entityManager.toJSON(),
+      components: this.componentRegistry.toJSON(),
+      entityComponents: entityComponentsArray,
+    };
+  }
+
+  static fromJSON(
+    data: string | WorldSnapshot,
+    componentTypes: ComponentType<unknown>[],
+  ): World {
+    const snapshot: WorldSnapshot =
+      typeof data === "string" ? (JSON.parse(data) as WorldSnapshot) : data;
+
+    if (snapshot.version !== SERIALIZATION_VERSION) {
+      throw new Error(
+        `Unsupported serialization version: ${snapshot.version}. ` +
+          `Expected version: ${SERIALIZATION_VERSION}`,
+      );
+    }
+
+    const world = new World();
+
+    world.entityManager = EntityManager.fromJSON(snapshot.entityManager);
+    world.componentRegistry = ComponentRegistry.fromJSON(
+      snapshot.components,
+      componentTypes,
+    );
+
+    world.entityComponents.clear();
+    for (const [entityId, componentNames] of snapshot.entityComponents) {
+      world.entityComponents.set(entityId, new Set(componentNames));
+    }
+
+    return world;
   }
 
   destroy(): void {

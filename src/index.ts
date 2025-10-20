@@ -6,3 +6,4 @@ export * from "./core/ComponentRegistry.js";
 export * from "./core/Entity.js";
 export * from "./core/Query.js";
 export * from "./core/QueryConfig.js";
+export * from "./core/serialization/types.js";

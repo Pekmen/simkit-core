@@ -1,4 +1,5 @@
 import { getIndex, type EntityId } from "../index.js";
+import type { ComponentStorageSnapshot } from "./serialization/types.js";
 
 export class ComponentStorage<T> {
   private sparse: (number | undefined)[] = [];
@@ -78,5 +79,23 @@ export class ComponentStorage<T> {
 
   size(): number {
     return this.dense.length;
+  }
+
+  toJSON(): ComponentStorageSnapshot<T> {
+    return {
+      sparse: this.sparse.map((value) => value ?? null),
+      dense: [...this.dense],
+      entities: [...this.entities],
+    };
+  }
+
+  static fromJSON<T>(
+    snapshot: ComponentStorageSnapshot<T>,
+  ): ComponentStorage<T> {
+    const storage = new ComponentStorage<T>();
+    storage.sparse = snapshot.sparse.map((value) => value ?? undefined);
+    storage.dense = [...snapshot.dense];
+    storage.entities = [...snapshot.entities];
+    return storage;
   }
 }
