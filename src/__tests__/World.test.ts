@@ -615,7 +615,9 @@ describe("World.createQuery", () => {
 
       expect(() => {
         world.update(16);
-      }).toThrow('System "ErrorSystem" threw error during update');
+      }).toThrow(
+        'System "ErrorSystem" threw error during update: System error',
+      );
     });
   });
 

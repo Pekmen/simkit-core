@@ -1,6 +1,15 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
+    "target": "ES2024",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2024"],
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "strict": true,
     "types": ["node"]
   },
   "include": ["./**/*"]
