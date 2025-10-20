@@ -12,6 +12,7 @@ export default defineConfig([
   },
   {
     files: ["**/*.ts"],
+    ignores: ["examples/**/*.ts"],
     plugins: { "@typescript-eslint": typescriptEslint },
     extends: [
       ...tseslint.configs.recommendedTypeChecked,
@@ -38,6 +39,36 @@ export default defineConfig([
       "@typescript-eslint/no-unsafe-call": "error",
       "@typescript-eslint/no-unsafe-member-access": "error",
       "@typescript-eslint/no-unsafe-return": "error",
+    },
+  },
+  {
+    files: ["examples/**/*.ts"],
+    plugins: { "@typescript-eslint": typescriptEslint },
+    extends: [
+      ...tseslint.configs.recommendedTypeChecked,
+      ...tseslint.configs.strictTypeChecked,
+      ...tseslint.configs.stylisticTypeChecked,
+    ],
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ["examples/tsconfig.json"],
+          defaultProject: "./examples/tsconfig.json",
+        },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/restrict-template-expressions": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_" },
+      ],
     },
   },
   {

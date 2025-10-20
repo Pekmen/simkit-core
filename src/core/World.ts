@@ -14,6 +14,7 @@ import { ComponentSerializerRegistry } from "../serialization/ComponentSerialize
 import type {
   ComponentSerializer,
   EntitySnapshot,
+  SerializedComponent,
   WorldSnapshot,
 } from "../serialization/Snapshot.js";
 
@@ -204,9 +205,13 @@ export class World {
       this.profiler.start(systemName);
       try {
         system.update(deltaTime);
-      } finally {
+      } catch (error) {
         this.profiler.end(systemName);
+        throw new Error(
+          `System "${system.constructor.name}" threw error during update: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
+      this.profiler.end(systemName);
     }
     this.profiler.endFrame();
   }
@@ -305,7 +310,7 @@ export class World {
         continue;
       }
 
-      const components = new Map<string, Record<string, unknown>>();
+      const components = new Map<string, SerializedComponent>();
 
       for (const componentName of componentNames) {
         const storage = this.componentRegistry.get({
