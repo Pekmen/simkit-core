@@ -1,6 +1,6 @@
 {
   "name": "simkit-core",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "A lightweight, type-safe Entity-Component-System (ECS) library for TypeScript",
   "license": "MIT",
   "main": "dist/index.js",
