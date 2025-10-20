@@ -85,7 +85,8 @@ export class World {
     componentType: ComponentType<T>,
     data?: Partial<T>,
   ): boolean {
-    this.profiler.start("component:add");
+    const profiling = this.profiler.isEnabled();
+    if (profiling) this.profiler.start("component:add");
     try {
       assert(componentType.name !== "", "ComponentType must have a valid name");
 
@@ -106,7 +107,7 @@ export class World {
       this.invalidateQueriesForComponent(componentType);
       return true;
     } finally {
-      this.profiler.end("component:add");
+      if (profiling) this.profiler.end("component:add");
     }
   }
 
@@ -114,7 +115,8 @@ export class World {
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): boolean {
-    this.profiler.start("component:remove");
+    const profiling = this.profiler.isEnabled();
+    if (profiling) this.profiler.start("component:remove");
     try {
       if (!this.entityManager.isEntityValid(entityId)) {
         return false;
@@ -137,7 +139,7 @@ export class World {
 
       return removed;
     } finally {
-      this.profiler.end("component:remove");
+      if (profiling) this.profiler.end("component:remove");
     }
   }
 
@@ -200,20 +202,21 @@ export class World {
   }
 
   update(deltaTime: number): void {
+    const profiling = this.profiler.isEnabled();
     for (const system of this.systems) {
       const systemName = `system:${system.constructor.name}`;
-      this.profiler.start(systemName);
+      if (profiling) this.profiler.start(systemName);
       try {
         system.update(deltaTime);
       } catch (error) {
-        this.profiler.end(systemName);
+        if (profiling) this.profiler.end(systemName);
         throw new Error(
           `System "${system.constructor.name}" threw error during update: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
-      this.profiler.end(systemName);
+      if (profiling) this.profiler.end(systemName);
     }
-    this.profiler.endFrame();
+    if (profiling) this.profiler.endFrame();
   }
 
   createQuery(config: QueryConfig): Query {

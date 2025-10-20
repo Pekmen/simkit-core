@@ -58,7 +58,8 @@ export class Query {
     }
 
     const profiler = this.world.getProfiler();
-    profiler.start("query:execute");
+    const profiling = profiler.isEnabled();
+    if (profiling) profiler.start("query:execute");
 
     try {
       if (this.isDirty) {
@@ -124,7 +125,7 @@ export class Query {
 
       return this.cachedResult;
     } finally {
-      profiler.end("query:execute");
+      if (profiling) profiler.end("query:execute");
     }
   }
 
