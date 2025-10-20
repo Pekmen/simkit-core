@@ -7,6 +7,7 @@ import {
   type ComponentType,
   type EntityId,
   type QueryConfig,
+  type WorldSnapshot,
 } from "../index.js";
 
 export class World {
@@ -16,6 +17,7 @@ export class World {
   private queries: Query[] = [];
   private queryIndex = new Map<string, Set<Query>>();
   private entityComponents = new Map<EntityId, Set<string>>();
+  private componentTypes = new Map<string, ComponentType<unknown>>();
 
   createEntity(): EntityId {
     return this.entityManager.createEntity();
@@ -62,6 +64,11 @@ export class World {
   ): boolean {
     if (!this.entityManager.isEntityValid(entityId)) {
       return false;
+    }
+
+    // Auto-register component type on first use
+    if (!this.componentTypes.has(componentType.name)) {
+      this.componentTypes.set(componentType.name, componentType);
     }
 
     const storage = this.componentRegistry.getOrCreate(componentType);
@@ -211,6 +218,56 @@ export class World {
     if (querySet) {
       for (const query of querySet) {
         query.markDirty();
+      }
+    }
+  }
+
+  save(): WorldSnapshot {
+    const components: WorldSnapshot["components"] = {};
+
+    for (const [name, storage] of this.componentRegistry.entries()) {
+      components[name] = storage.serialize();
+    }
+
+    return {
+      entities: this.entityManager.serialize(),
+      components,
+    };
+  }
+
+  load(
+    snapshot: WorldSnapshot,
+    componentTypes: ComponentType<unknown>[],
+  ): void {
+    this.destroy();
+
+    for (const componentType of componentTypes) {
+      this.componentTypes.set(componentType.name, componentType);
+    }
+
+    this.entityManager.deserialize(snapshot.entities);
+
+    for (const [componentName, componentSnapshot] of Object.entries(
+      snapshot.components,
+    )) {
+      const componentType = this.componentTypes.get(componentName);
+
+      if (!componentType) {
+        throw new Error(
+          `Component type '${componentName}' not found. Did you forget to register it?`,
+        );
+      }
+
+      const storage = this.componentRegistry.getOrCreate(componentType);
+      storage.deserialize(componentSnapshot);
+
+      for (const entityId of componentSnapshot.entities) {
+        let components = this.entityComponents.get(entityId);
+        if (!components) {
+          components = new Set();
+          this.entityComponents.set(entityId, components);
+        }
+        components.add(componentName);
       }
     }
   }
