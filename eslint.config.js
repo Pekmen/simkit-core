@@ -8,7 +8,13 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   {
-    ignores: ["dist/**", "coverage/**", "node_modules/**", "package-lock.json"],
+    ignores: [
+      "dist/**",
+      "coverage/**",
+      "node_modules/**",
+      "package-lock.json",
+      "benchmarks/local/**",
+    ],
   },
   {
     files: ["**/*.ts"],

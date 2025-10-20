@@ -13,6 +13,11 @@ dist-ssr
 *.local
 coverage
 
+# Benchmark compiled files
+benchmarks/local/index.js
+benchmarks/local/index.d.ts
+benchmarks/local/src/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
