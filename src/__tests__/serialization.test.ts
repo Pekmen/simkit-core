@@ -39,7 +39,6 @@ describe("Serialization", () => {
       const entity2 = manager.createEntity();
       const entity3 = manager.createEntity();
 
-      // Destroy middle entity
       manager.destroyEntity(entity2);
 
       const snapshot = manager.toJSON();
@@ -50,7 +49,6 @@ describe("Serialization", () => {
       expect(restored.isEntityValid(entity2)).toBe(false);
       expect(restored.isEntityValid(entity3)).toBe(true);
 
-      // Create a new entity - should reuse entity2's index with new generation
       const entity4 = restored.createEntity();
       expect(restored.getEntityCount()).toBe(3);
       expect(restored.isEntityValid(entity4)).toBe(true);
@@ -88,7 +86,7 @@ describe("Serialization", () => {
     test("should preserve sparse array structure", () => {
       const storage = new ComponentStorage<{ value: number }>();
       const entity1 = 0 as EntityId;
-      const entity2 = 100 as EntityId; // Large gap
+      const entity2 = 100 as EntityId;
 
       storage.addComponent(entity1, { value: 1 });
       storage.addComponent(entity2, { value: 2 });
@@ -154,7 +152,6 @@ describe("Serialization", () => {
 
       const snapshot = registry.toJSON();
 
-      // Missing Position in component types
       expect(() => {
         ComponentRegistry.fromJSON(snapshot, [Velocity]);
       }).toThrow(/Component type 'Position' not found/);
@@ -216,7 +213,6 @@ describe("Serialization", () => {
       world.addComponent(entity2, Position, { x: 30, y: 40 });
       world.addComponent(entity3, Position, { x: 50, y: 60 });
 
-      // Destroy middle entity
       world.destroyEntity(entity2);
 
       const snapshot = world.toJSON();
@@ -255,7 +251,6 @@ describe("Serialization", () => {
         Health,
       ]);
 
-      // Verify components are correctly associated with entities
       expect(restored.hasComponent(entity1, Position)).toBe(true);
       expect(restored.hasComponent(entity1, Velocity)).toBe(true);
       expect(restored.hasComponent(entity1, Health)).toBe(false);
@@ -273,7 +268,6 @@ describe("Serialization", () => {
       world.addComponent(entity, Position, { x: 10, y: 20 });
 
       const snapshot = world.toJSON();
-      // Pass object directly instead of JSON string
       const restored = World.fromJSON(snapshot, [Position]);
 
       expect(restored.getComponent(entity, Position)).toEqual({ x: 10, y: 20 });
@@ -283,7 +277,6 @@ describe("Serialization", () => {
       const world = new World();
       const snapshot = world.toJSON();
 
-      // Modify version
       snapshot.version = "999.0";
 
       expect(() => {
@@ -319,7 +312,6 @@ describe("Serialization", () => {
       const world = new World();
       const entities: EntityId[] = [];
 
-      // Create 1000 entities
       for (let i = 0; i < 1000; i++) {
         const entity = world.createEntity();
         entities.push(entity);
@@ -331,7 +323,6 @@ describe("Serialization", () => {
 
       expect(restored.getEntityCount()).toBe(1000);
 
-      // Verify some random entities
       expect(restored.getComponent(entities[0], Position)).toEqual({
         x: 0,
         y: 0,
@@ -353,21 +344,17 @@ describe("Serialization", () => {
       const entity = world.createEntity();
       world.addComponent(entity, Position, { x: 10, y: 20 });
 
-      // Create a query
       world.createQuery({ with: [Position] });
 
       const snapshot = world.toJSON();
 
-      // Snapshot should not contain systems or queries
       expect(snapshot).not.toHaveProperty("systems");
       expect(snapshot).not.toHaveProperty("queries");
 
       const restored = World.fromJSON(JSON.stringify(snapshot), [Position]);
 
-      // Restored world should work correctly
       expect(restored.getComponent(entity, Position)).toEqual({ x: 10, y: 20 });
 
-      // Can create new queries on restored world
       const query = restored.createQuery({ with: [Position] });
       expect(query.execute()).toContain(entity);
     });
