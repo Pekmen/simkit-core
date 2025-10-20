@@ -1,4 +1,10 @@
-import { defineComponent, Query, System, World } from "../index.js";
+import {
+  defineComponent,
+  Query,
+  System,
+  World,
+  type WorldSnapshot,
+} from "../index.js";
 
 interface TestComponentA {
   foo: string;
@@ -437,6 +443,277 @@ describe("World.createQuery", () => {
 
       expect(queryBefore.execute()).toEqual(queryAfter.execute());
       expect(queryBefore.execute()).toContain(entity);
+    });
+  });
+});
+
+describe("World serialization", () => {
+  let world: World;
+
+  beforeEach(() => {
+    world = new World();
+  });
+
+  describe("save and load", () => {
+    test("should save and restore empty world", () => {
+      const snapshot = world.save();
+      const world2 = new World();
+      world2.load(snapshot, []);
+
+      expect(world2.getEntityCount()).toBe(0);
+    });
+
+    test("should save and restore entities without components", () => {
+      world.createEntity();
+      world.createEntity();
+      world.createEntity();
+
+      const snapshot = world.save();
+      const world2 = new World();
+      world2.load(snapshot, []);
+
+      expect(world2.getEntityCount()).toBe(3);
+    });
+
+    test("should save and restore single component", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, TestComponentAType, { foo: "test" });
+
+      const snapshot = world.save();
+      const world2 = new World();
+      world2.load(snapshot, [TestComponentAType]);
+
+      expect(world2.getEntityCount()).toBe(1);
+      expect(world2.getComponent(entity, TestComponentAType)).toEqual({
+        foo: "test",
+      });
+    });
+
+    test("should save and restore multiple components on same entity", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, TestComponentAType, { foo: "a" });
+      world.addComponent(entity, TestComponentBType, { bar: 42 });
+
+      const snapshot = world.save();
+      const world2 = new World();
+      world2.load(snapshot, [TestComponentAType, TestComponentBType]);
+
+      expect(world2.getComponent(entity, TestComponentAType)).toEqual({
+        foo: "a",
+      });
+      expect(world2.getComponent(entity, TestComponentBType)).toEqual({
+        bar: 42,
+      });
+    });
+
+    test("should save and restore multiple entities with different components", () => {
+      const e1 = world.createEntity();
+      const e2 = world.createEntity();
+      const e3 = world.createEntity();
+
+      world.addComponent(e1, TestComponentAType, { foo: "one" });
+      world.addComponent(e2, TestComponentBType, { bar: 2 });
+      world.addComponent(e3, TestComponentAType, { foo: "three" });
+      world.addComponent(e3, TestComponentCType, { active: true });
+
+      const snapshot = world.save();
+      const world2 = new World();
+      world2.load(snapshot, [
+        TestComponentAType,
+        TestComponentBType,
+        TestComponentCType,
+      ]);
+
+      expect(world2.getEntityCount()).toBe(3);
+      expect(world2.getComponent(e1, TestComponentAType)).toEqual({
+        foo: "one",
+      });
+      expect(world2.getComponent(e2, TestComponentBType)).toEqual({ bar: 2 });
+      expect(world2.getComponent(e3, TestComponentAType)).toEqual({
+        foo: "three",
+      });
+      expect(world2.getComponent(e3, TestComponentCType)).toEqual({
+        active: true,
+      });
+    });
+
+    test("should preserve entity IDs across save/load", () => {
+      const e1 = world.createEntity();
+      const e2 = world.createEntity();
+
+      world.addComponent(e1, TestComponentAType, { foo: "e1" });
+      world.addComponent(e2, TestComponentAType, { foo: "e2" });
+
+      const snapshot = world.save();
+      const world2 = new World();
+      world2.load(snapshot, [TestComponentAType]);
+
+      // Entity IDs should be the same
+      expect(world2.getComponent(e1, TestComponentAType)).toEqual({
+        foo: "e1",
+      });
+      expect(world2.getComponent(e2, TestComponentAType)).toEqual({
+        foo: "e2",
+      });
+    });
+
+    test("should handle recycled entity IDs", () => {
+      const e1 = world.createEntity();
+      const e2 = world.createEntity();
+      world.destroyEntity(e1);
+      const e3 = world.createEntity(); // Should reuse e1's index
+
+      world.addComponent(e2, TestComponentAType, { foo: "e2" });
+      world.addComponent(e3, TestComponentBType, { bar: 3 });
+
+      const snapshot = world.save();
+      const world2 = new World();
+      world2.load(snapshot, [TestComponentAType, TestComponentBType]);
+
+      expect(world2.getEntityCount()).toBe(2);
+      expect(world2.getComponent(e2, TestComponentAType)).toEqual({
+        foo: "e2",
+      });
+      expect(world2.getComponent(e3, TestComponentBType)).toEqual({ bar: 3 });
+      // e1 should not be valid
+      expect(world2.getComponent(e1, TestComponentAType)).toBeUndefined();
+    });
+  });
+
+  describe("JSON serialization", () => {
+    test("should serialize to JSON and back", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, TestComponentAType, { foo: "json" });
+      world.addComponent(entity, TestComponentBType, { bar: 123 });
+
+      const snapshot = world.save();
+      const json = JSON.stringify(snapshot);
+      const parsed = JSON.parse(json) as WorldSnapshot;
+
+      const world2 = new World();
+      world2.load(parsed, [TestComponentAType, TestComponentBType]);
+
+      expect(world2.getEntityCount()).toBe(1);
+      expect(world2.getComponent(entity, TestComponentAType)).toEqual({
+        foo: "json",
+      });
+      expect(world2.getComponent(entity, TestComponentBType)).toEqual({
+        bar: 123,
+      });
+    });
+  });
+
+  describe("error handling", () => {
+    test("should throw error when loading component type not registered", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, TestComponentAType, { foo: "test" });
+      world.addComponent(entity, TestComponentBType, { bar: 42 });
+
+      const snapshot = world.save();
+      const world2 = new World();
+
+      expect(() => {
+        // Only register TestComponentAType, not TestComponentBType
+        world2.load(snapshot, [TestComponentAType]);
+      }).toThrow("Component type 'B' not found");
+    });
+
+    test("should not throw when all component types are registered", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, TestComponentAType, { foo: "test" });
+
+      const snapshot = world.save();
+      const world2 = new World();
+
+      expect(() => {
+        world2.load(snapshot, [TestComponentAType]);
+      }).not.toThrow();
+    });
+  });
+
+  describe("load clears existing state", () => {
+    test("should clear existing entities when loading", () => {
+      const world2 = new World();
+      world2.createEntity();
+      world2.createEntity();
+      expect(world2.getEntityCount()).toBe(2);
+
+      const snapshot = world.save(); // Empty world
+      world2.load(snapshot, []);
+
+      expect(world2.getEntityCount()).toBe(0);
+    });
+
+    test("should clear existing components when loading", () => {
+      const world2 = new World();
+      const entity = world2.createEntity();
+      world2.addComponent(entity, TestComponentAType, { foo: "old" });
+
+      const e2 = world.createEntity();
+      world.addComponent(e2, TestComponentBType, { bar: 99 });
+
+      const snapshot = world.save();
+      world2.load(snapshot, [TestComponentBType]);
+
+      // Old component should be gone
+      expect(world2.getComponent(entity, TestComponentAType)).toBeUndefined();
+      // New component should exist
+      expect(world2.getComponent(e2, TestComponentBType)).toEqual({ bar: 99 });
+    });
+  });
+
+  describe("queries after deserialization", () => {
+    test("should support queries on deserialized world", () => {
+      const e1 = world.createEntity();
+      const e2 = world.createEntity();
+      const e3 = world.createEntity();
+
+      world.addComponent(e1, TestComponentAType, { foo: "1" });
+      world.addComponent(e2, TestComponentAType, { foo: "2" });
+      world.addComponent(e2, TestComponentBType, { bar: 2 });
+      world.addComponent(e3, TestComponentBType, { bar: 3 });
+
+      const snapshot = world.save();
+      const world2 = new World();
+      world2.load(snapshot, [TestComponentAType, TestComponentBType]);
+
+      const query = world2.createQuery({ with: [TestComponentAType] });
+      const results = query.execute();
+
+      expect(results.length).toBe(2);
+      expect(results).toContain(e1);
+      expect(results).toContain(e2);
+    });
+
+    test("should support complex queries on deserialized world", () => {
+      const e1 = world.createEntity();
+      const e2 = world.createEntity();
+      const e3 = world.createEntity();
+
+      world.addComponent(e1, TestComponentAType);
+      world.addComponent(e1, TestComponentBType);
+
+      world.addComponent(e2, TestComponentAType);
+      world.addComponent(e2, TestComponentCType);
+
+      world.addComponent(e3, TestComponentBType);
+
+      const snapshot = world.save();
+      const world2 = new World();
+      world2.load(snapshot, [
+        TestComponentAType,
+        TestComponentBType,
+        TestComponentCType,
+      ]);
+
+      const query = world2.createQuery({
+        with: [TestComponentAType],
+        without: [TestComponentBType],
+      });
+      const results = query.execute();
+
+      expect(results.length).toBe(1);
+      expect(results).toContain(e2);
     });
   });
 });
