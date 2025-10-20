@@ -488,4 +488,150 @@ describe("World.createQuery", () => {
       expect(emptyConfigWorld.getProfiler().isEnabled()).toBe(false);
     });
   });
+
+  describe("removeQuery", () => {
+    test("should remove query from world", () => {
+      const query = world.createQuery({ with: [TestComponentAType] });
+      expect(world.removeQuery(query)).toBe(true);
+      expect(world.removeQuery(query)).toBe(false);
+    });
+
+    test("should return false for non-existent query", () => {
+      const otherWorld = new World();
+      const query = otherWorld.createQuery({ with: [TestComponentAType] });
+      expect(world.removeQuery(query)).toBe(false);
+    });
+  });
+
+  describe("getEntitiesWithComponent", () => {
+    test("should return entities with specific component", () => {
+      const entity1 = world.createEntity();
+      const entity2 = world.createEntity();
+      const entity3 = world.createEntity();
+
+      world.addComponent(entity1, TestComponentAType);
+      world.addComponent(entity2, TestComponentAType);
+
+      const entities = world.getEntitiesWithComponent(TestComponentAType);
+      expect(entities).toContain(entity1);
+      expect(entities).toContain(entity2);
+      expect(entities).not.toContain(entity3);
+    });
+
+    test("should return undefined for non-existent component", () => {
+      const entities = world.getEntitiesWithComponent(TestComponentAType);
+      expect(entities).toBeUndefined();
+    });
+  });
+
+  describe("getComponentStorage", () => {
+    test("should return storage for existing component", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, TestComponentAType);
+
+      const storage = world.getComponentStorage(TestComponentAType);
+      expect(storage).toBeDefined();
+      expect(storage?.size()).toBe(1);
+    });
+
+    test("should return undefined for non-existent component", () => {
+      const storage = world.getComponentStorage(TestComponentAType);
+      expect(storage).toBeUndefined();
+    });
+  });
+
+  describe("addComponent edge cases", () => {
+    test("should return false when adding to invalid entity", () => {
+      const invalidEntity = 999 as ReturnType<World["createEntity"]>;
+      const result = world.addComponent(invalidEntity, TestComponentAType);
+      expect(result).toBe(false);
+    });
+
+    test("should return false when adding to destroyed entity", () => {
+      const entity = world.createEntity();
+      world.destroyEntity(entity);
+      const result = world.addComponent(entity, TestComponentAType);
+      expect(result).toBe(false);
+    });
+
+    test("should use default values when no data provided", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, TestComponentAType);
+      expect(world.getComponent(entity, TestComponentAType)).toEqual({
+        foo: "default",
+      });
+    });
+  });
+
+  describe("removeComponent edge cases", () => {
+    test("should return false when removing from invalid entity", () => {
+      const invalidEntity = 999 as ReturnType<World["createEntity"]>;
+      const result = world.removeComponent(invalidEntity, TestComponentAType);
+      expect(result).toBe(false);
+    });
+
+    test("should return false when removing from destroyed entity", () => {
+      const entity = world.createEntity();
+      world.destroyEntity(entity);
+      const result = world.removeComponent(entity, TestComponentAType);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("world destroy", () => {
+    test("should clear all entities", () => {
+      world.createEntity();
+      world.createEntity();
+      world.destroy();
+      expect(world.getEntityCount()).toBe(0);
+    });
+
+    test("should clear all systems", () => {
+      const system = new TestSystem(world);
+      world.addSystem(system);
+      world.destroy();
+      expect(world.getSystems()).toEqual([]);
+    });
+
+    test("should allow creating entities after destroy", () => {
+      world.createEntity();
+      world.destroy();
+      const entity = world.createEntity();
+      expect(world.getEntityCount()).toBe(1);
+      expect(entity).toBe(0);
+    });
+  });
+
+  describe("system error handling", () => {
+    class ErrorSystem extends System {
+      update(): void {
+        throw new Error("System error");
+      }
+    }
+
+    test("should throw error with system name when system update fails", () => {
+      const system = new ErrorSystem(world);
+      world.addSystem(system);
+
+      expect(() => {
+        world.update(16);
+      }).toThrow('System "ErrorSystem" threw error during update');
+    });
+  });
+
+  describe("removeSystem edge cases", () => {
+    test("should return false when removing non-existent system", () => {
+      const system = new TestSystem(world);
+      const result = world.removeSystem(system);
+      expect(result).toBe(false);
+    });
+
+    test("should not allow adding same system twice", () => {
+      const system = new TestSystem(world);
+      world.addSystem(system);
+      expect(() => {
+        world.addSystem(system);
+      }).toThrow("System is already added to this world");
+    });
+  });
 });

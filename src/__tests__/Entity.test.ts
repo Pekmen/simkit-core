@@ -114,4 +114,93 @@ describe("EntityManager", () => {
     expect(manager.isEntityValid(entity2)).toBe(true);
     expect(entity1).not.toBe(entity2);
   });
+
+  test("getEntityCount returns correct count", () => {
+    expect(manager.getEntityCount()).toBe(0);
+
+    const entity1 = manager.createEntity();
+    expect(manager.getEntityCount()).toBe(1);
+
+    const entity2 = manager.createEntity();
+    expect(manager.getEntityCount()).toBe(2);
+
+    manager.destroyEntity(entity1);
+    expect(manager.getEntityCount()).toBe(1);
+
+    manager.destroyEntity(entity2);
+    expect(manager.getEntityCount()).toBe(0);
+  });
+
+  test("generation increments on recycling", () => {
+    const entity1 = manager.createEntity();
+    const index = entity1 & 0xffffff;
+    const gen1 = entity1 >>> 24;
+
+    manager.destroyEntity(entity1);
+
+    const entity2 = manager.createEntity();
+    const index2 = entity2 & 0xffffff;
+    const gen2 = entity2 >>> 24;
+
+    expect(index2).toBe(index);
+    expect(gen2).toBe((gen1 + 1) & 0xff);
+  });
+
+  test("getAllActiveEntities returns empty array initially", () => {
+    expect(manager.getAllActiveEntities()).toEqual([]);
+  });
+
+  test("multiple destroy and create cycles", () => {
+    const entity1 = manager.createEntity();
+    const entity2 = manager.createEntity();
+    const entity3 = manager.createEntity();
+
+    manager.destroyEntity(entity1);
+    manager.destroyEntity(entity2);
+
+    const entity4 = manager.createEntity();
+    const entity5 = manager.createEntity();
+
+    expect(manager.getAllActiveEntities()).toContain(entity3);
+    expect(manager.getAllActiveEntities()).toContain(entity4);
+    expect(manager.getAllActiveEntities()).toContain(entity5);
+    expect(manager.getAllActiveEntities().length).toBe(3);
+  });
+
+  test("snapshot functionality", () => {
+    const entity1 = manager.createEntity();
+    const entity2 = manager.createEntity();
+    manager.destroyEntity(entity1);
+
+    const snapshot = manager.createSnapshot();
+
+    expect(snapshot.nextIndex).toBe(2);
+    expect(snapshot.freeList.length).toBe(1);
+    expect(snapshot.activeEntities).toContain(entity2);
+    expect(snapshot.activeEntities).not.toContain(entity1);
+
+    const newManager = new EntityManager();
+    newManager.restoreFromSnapshot(snapshot);
+
+    expect(newManager.getEntityCount()).toBe(1);
+    expect(newManager.isEntityValid(entity2)).toBe(true);
+    expect(newManager.isEntityValid(entity1)).toBe(false);
+  });
+
+  test("restoreFromSnapshot preserves free list", () => {
+    const entity1 = manager.createEntity();
+    const entity2 = manager.createEntity();
+    manager.destroyEntity(entity1);
+
+    const snapshot = manager.createSnapshot();
+
+    const newManager = new EntityManager();
+    newManager.restoreFromSnapshot(snapshot);
+
+    const entity3 = newManager.createEntity();
+
+    expect(newManager.getEntityCount()).toBe(2);
+    expect(newManager.getAllActiveEntities()).toContain(entity2);
+    expect(newManager.getAllActiveEntities()).toContain(entity3);
+  });
 });

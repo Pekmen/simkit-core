@@ -275,4 +275,66 @@ describe("Profiler", () => {
       expect(report).toContain("Profiler Report");
     });
   });
+
+  describe("edge cases", () => {
+    beforeEach(() => {
+      profiler.enable();
+    });
+
+    it("should handle nested start calls for same operation", () => {
+      profiler.start("operation");
+      profiler.start("operation");
+      profiler.end("operation");
+
+      const stats = profiler.getStats("operation");
+      expect(stats).toBeDefined();
+      expect(stats!.count).toBe(1);
+    });
+
+    it("should handle getStats for non-existent operation", () => {
+      const stats = profiler.getStats("nonexistent");
+      expect(stats).toBeUndefined();
+    });
+
+    it("should handle very small frame history limit", () => {
+      profiler.setMaxFrameHistory(1);
+
+      profiler.start("op");
+      profiler.end("op");
+      profiler.endFrame();
+
+      profiler.start("op");
+      profiler.end("op");
+      profiler.endFrame();
+
+      const history = profiler.getFrameHistory();
+      expect(history.length).toBe(1);
+    });
+
+    it("should return undefined for getLastFrame when no frames recorded", () => {
+      expect(profiler.getLastFrame()).toBeUndefined();
+    });
+
+    it("should handle async function errors correctly", async () => {
+      await expect(
+        profiler.measureAsync("test", async () => {
+          await Promise.resolve();
+          throw new Error("Test error");
+        }),
+      ).rejects.toThrow("Test error");
+    });
+
+    it("should still record timing when async function throws", async () => {
+      try {
+        await profiler.measureAsync("test", async () => {
+          await Promise.resolve();
+          throw new Error("Test error");
+        });
+      } catch {}
+
+      const stats = profiler.getStats("test");
+      expect(stats).toBeDefined();
+      expect(stats!.count).toBe(1);
+    });
+  });
 });

@@ -30,171 +30,358 @@ Latest benchmark results for version 0.7.7 (10/19/2025):
 
 ## Installation
 
-### Using npm
-
 ```bash
+# npm
 npm install simkit-core
-```
 
-### Using yarn
-
-```bash
+# yarn
 yarn add simkit-core
-```
-
-### Using pnpm
-
-```bash
-pnpm add simkit-core
-```
-
-### From GitHub
-
-```bash
-npm install github:Pekmen/simkit-core
-```
-
-### Development Installation
-
-If you want to contribute or run the examples:
-
-```bash
-# Clone the repository
-git clone https://github.com/Pekmen/simkit-core.git
-cd simkit-core
-
-# Install dependencies
-npm install
-
-# Run tests
-npm test
-
-# Build the library
-npm run build
-
-# Run the example
-npm run start examples/basic.ts
 ```
 
 ## Features
 
-- 🚀 **High Performance**: Optimized for game development and simulations
-- 🔒 **Type Safe**: Full TypeScript support with type inference
-- 🧩 **Simple API**: Easy to learn and use
-- 🔧 **Flexible**: Supports complex component relationships
-- 📦 **Lightweight**: Minimal dependencies and small bundle size
+- **High Performance**: Sparse-set component storage with query caching for fast iteration
+- **Type Safe**: Full TypeScript support with generic components and type inference
+- **Flexible Queries**: Filter entities with `with`, `without`, and `oneOf` constraints
+- **Built-in Profiling**: Optional performance monitoring for systems, queries, and components
+- **Snapshot Support**: Serialize and restore world state for save/load functionality
+- **Development Mode**: Assertions and warnings during development, stripped in production
 
 ## Quick Start
 
 ```typescript
 import { World, System, defineComponent } from "simkit-core";
 
-// Define components
-interface Position {
-  x: number;
-  y: number;
-}
-
-interface Velocity {
-  dx: number;
-  dy: number;
-}
+interface Position { x: number; y: number; }
+interface Velocity { dx: number; dy: number; }
 
 const Position = defineComponent<Position>("Position", { x: 0, y: 0 });
 const Velocity = defineComponent<Velocity>("Velocity", { dx: 0, dy: 0 });
 
-// Create a system
 class MovementSystem extends System {
+  private query = this.world.createQuery({
+    with: [Position, Velocity]
+  });
+
   update(deltaTime: number): void {
-    const entities = this.world.getAllEntities();
+    for (const entity of this.query.execute()) {
+      const pos = this.world.getComponent(entity, Position)!;
+      const vel = this.world.getComponent(entity, Velocity)!;
 
-    for (const entity of entities) {
-      const pos = this.world.getComponent(entity, Position);
-      const vel = this.world.getComponent(entity, Velocity);
-
-      if (pos && vel) {
-        pos.x += vel.dx * deltaTime;
-        pos.y += vel.dy * deltaTime;
-      }
+      pos.x += vel.dx * deltaTime;
+      pos.y += vel.dy * deltaTime;
     }
   }
 }
 
-// Create world and add system
 const world = new World();
 world.addSystem(new MovementSystem(world));
 
-// Create entities
-const player = world.createEntity();
-world.addComponent(player, Position, { x: 0, y: 0 });
-world.addComponent(player, Velocity, { dx: 1, dy: 1 });
+const entity = world.createEntity();
+world.addComponent(entity, Position, { x: 0, y: 0 });
+world.addComponent(entity, Velocity, { dx: 1, dy: 1 });
 
-// Run the simulation
-world.update(16); // 16ms delta time
+world.update(16);
+```
+
+## Core Concepts
+
+### Entities
+
+Entities are unique identifiers (branded numbers) with packed index and generation counter to prevent stale references after destruction.
+
+```typescript
+const entity = world.createEntity();
+world.destroyEntity(entity);
+const isValid = world.entityManager.isEntityValid(entity);
+```
+
+### Components
+
+Components are plain data objects defined with TypeScript interfaces. Use `defineComponent` to create component types with default values.
+
+```typescript
+interface Health { current: number; max: number; }
+
+const Health = defineComponent<Health>("Health", {
+  current: 100,
+  max: 100
+});
+
+world.addComponent(entity, Health);
+world.addComponent(entity, Health, { current: 80 });
+world.removeComponent(entity, Health);
+const health = world.getComponent(entity, Health);
+```
+
+### Queries
+
+Queries efficiently filter entities based on component constraints. Results are cached and invalidated automatically when components change.
+
+```typescript
+const movingEntities = world.createQuery({
+  with: [Position, Velocity],
+  without: [Static],
+  oneOf: [Player, Enemy]
+});
+
+for (const entity of movingEntities.execute()) {
+  // Process entities
+}
+```
+
+**Query constraints:**
+- `with`: Entity must have all specified components
+- `without`: Entity must not have any specified components
+- `oneOf`: Entity must have at least one specified component
+
+### Systems
+
+Systems contain game logic and operate on entities with specific components. Systems have lifecycle hooks: `init()`, `update(deltaTime)`, and `cleanup()`.
+
+```typescript
+class DamageSystem extends System {
+  private query = this.world.createQuery({ with: [Health, Damage] });
+
+  init(): void {
+    console.log("DamageSystem initialized");
+  }
+
+  update(deltaTime: number): void {
+    for (const entity of this.query.execute()) {
+      const health = this.world.getComponent(entity, Health)!;
+      const damage = this.world.getComponent(entity, Damage)!;
+
+      health.current -= damage.amount;
+
+      if (health.current <= 0) {
+        this.world.destroyEntity(entity);
+      }
+    }
+  }
+
+  cleanup(): void {
+    console.log("DamageSystem cleaned up");
+  }
+}
+
+world.addSystem(new DamageSystem(world));
+world.removeSystem(system);
+```
+
+### Profiling
+
+Enable profiling to monitor system execution time, query performance, and component operations.
+
+```typescript
+const world = new World({
+  enableProfiling: true,
+  maxFrameHistory: 60
+});
+
+world.update(16);
+
+const profiler = world.getProfiler();
+console.log(profiler.generateReport());
+console.log(`FPS: ${profiler.getFPS()}`);
+console.log(`Avg frame time: ${profiler.getAverageFrameTime()}ms`);
+```
+
+### Snapshots
+
+Serialize and restore world state for save/load functionality or time travel debugging.
+
+```typescript
+const snapshot = world.createSnapshot();
+
+world.restoreFromSnapshot(snapshot);
+
+interface CustomData {
+  timestamp: Date;
+}
+
+const serializer = {
+  serialize: (component: CustomData) => ({
+    timestamp: component.timestamp.getTime()
+  }),
+  deserialize: (data: any) => ({
+    timestamp: new Date(data.timestamp)
+  })
+};
+
+world.registerComponentSerializer("CustomData", serializer);
+```
+
+## Advanced Usage
+
+### Component Storage Access
+
+Access underlying component storage for batch operations.
+
+```typescript
+const storage = world.getComponentStorage(Position);
+const allPositions = storage?.getAllComponents();
+const allEntities = storage?.getAllEntities();
+```
+
+### World Configuration
+
+Configure world behavior at creation time.
+
+```typescript
+const world = new World({
+  enableProfiling: true,
+  maxFrameHistory: 120
+});
+
+world.enableProfiling();
+world.disableProfiling();
+```
+
+### Entity Recycling
+
+The entity manager maintains a free list of destroyed entity IDs for efficient reuse with generation counter increments.
+
+```typescript
+const entity1 = world.createEntity();
+world.destroyEntity(entity1);
+
+const entity2 = world.createEntity();
+```
+
+### Error Handling
+
+The library includes comprehensive error checking in development mode (controlled by `process.env.NODE_ENV`).
+
+```typescript
+world.addComponent(entity, Position);
+
+world.destroyEntity(entity);
+
+const invalid = world.addComponent(entity, Position);
 ```
 
 ## API Reference
 
 ### World
 
-The main ECS container that manages entities, components, and systems.
-
 ```typescript
-const world = new World();
+class World {
+  constructor(config?: WorldConfig);
 
-// Entity management
-const entity = world.createEntity();
-world.destroyEntity(entity);
-world.getAllEntities();
-world.getEntityCount();
+  createEntity(): EntityId;
+  destroyEntity(entityId: EntityId): void;
+  getAllEntities(): readonly EntityId[];
+  getEntityCount(): number;
 
-// Component management
-world.addComponent(entity, ComponentType, data);
-world.removeComponent(entity, ComponentType);
-world.getComponent(entity, ComponentType);
-world.hasComponent(entity, ComponentType);
+  addComponent<T>(entityId: EntityId, componentType: ComponentType<T>, data?: Partial<T>): boolean;
+  removeComponent<T>(entityId: EntityId, componentType: ComponentType<T>): boolean;
+  getComponent<T>(entityId: EntityId, componentType: ComponentType<T>): T | undefined;
+  hasComponent<T>(entityId: EntityId, componentType: ComponentType<T>): boolean;
+  getEntitiesWithComponent<T>(componentType: ComponentType<T>): readonly EntityId[] | undefined;
+  getComponentStorage<T>(componentType: ComponentType<T>): ComponentStorage<T> | undefined;
 
-// System management
-world.addSystem(system);
-world.update(deltaTime);
+  addSystem(system: System): void;
+  removeSystem(system: System): boolean;
+  getSystems(): readonly System[];
+  clearSystems(): void;
+  update(deltaTime: number): void;
+
+  createQuery(config: QueryConfig): Query;
+  removeQuery(query: Query): boolean;
+
+  getProfiler(): Profiler;
+  enableProfiling(): void;
+  disableProfiling(): void;
+
+  registerComponentSerializer<T>(componentName: string, serializer: ComponentSerializer<T>): void;
+  createSnapshot(): WorldSnapshot;
+  restoreFromSnapshot(snapshot: WorldSnapshot): void;
+
+  destroy(): void;
+}
 ```
 
 ### defineComponent
 
-Creates a component type with default values and type safety.
-
 ```typescript
-interface Health {
-  current: number;
-  max: number;
+function defineComponent<T>(
+  name: string,
+  defaultValues: T
+): ComponentType<T>;
+
+interface ComponentType<T> {
+  name: string;
+  create(data?: Partial<T>): T;
 }
-
-const Health = defineComponent<Health>("Health", {
-  current: 100,
-  max: 100,
-});
-
-// Usage
-world.addComponent(entity, Health, { current: 80 }); // max will be 100
 ```
 
 ### System
 
-Base class for creating systems that operate on entities and components.
+```typescript
+abstract class System {
+  protected world: World;
+
+  constructor(world: World);
+
+  init(): void;
+  abstract update(deltaTime: number): void;
+  cleanup(): void;
+}
+```
+
+### Query
 
 ```typescript
-class HealthSystem extends System {
-  update(deltaTime: number): void {
-    const entities = this.world.getAllEntities();
-
-    for (const entity of entities) {
-      const health = this.world.getComponent(entity, Health);
-      if (health && health.current <= 0) {
-        this.world.destroyEntity(entity);
-      }
-    }
-  }
+interface QueryConfig {
+  with?: ComponentType<unknown>[];
+  without?: ComponentType<unknown>[];
+  oneOf?: ComponentType<unknown>[];
 }
+
+class Query {
+  execute(): readonly EntityId[];
+  markDirty(): void;
+  tracksComponent(componentName: string): boolean;
+}
+```
+
+### Profiler
+
+```typescript
+class Profiler {
+  enable(): void;
+  disable(): void;
+  isEnabled(): boolean;
+
+  start(name: string): void;
+  end(name: string): void;
+  measure<T>(name: string, fn: () => T): T;
+  measureAsync<T>(name: string, fn: () => Promise<T>): Promise<T>;
+
+  getStats(name: string): ProfilingStats | undefined;
+  getAllStats(): Map<string, ProfilingStats>;
+
+  endFrame(): void;
+  getLastFrame(): FrameProfile | undefined;
+  getFrameHistory(): readonly FrameProfile[];
+  getAverageFrameTime(): number;
+  getFPS(): number;
+
+  setMaxFrameHistory(max: number): void;
+  clear(): void;
+  generateReport(): string;
+}
+```
+
+## Development
+
+```bash
+git clone https://github.com/Pekmen/simkit-core.git
+cd simkit-core
+npm install
+npm test
+npm run build
 ```
 
 ## License

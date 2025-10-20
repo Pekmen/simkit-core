@@ -270,4 +270,88 @@ describe("Snapshot", () => {
       value: "Player",
     });
   });
+
+  test("snapshot with entity without components", () => {
+    world.createEntity();
+
+    const snapshot: WorldSnapshot = world.createSnapshot();
+
+    expect(snapshot.entities).toHaveLength(0);
+  });
+
+  test("snapshot serialization without custom serializer", () => {
+    const entity = world.createEntity();
+    world.addComponent(entity, PositionType, { x: 5, y: 10 });
+
+    const snapshot: WorldSnapshot = world.createSnapshot();
+
+    const newWorld = new World();
+    newWorld.restoreFromSnapshot(snapshot);
+
+    expect(newWorld.getComponent(entity, PositionType)).toEqual({
+      x: 5,
+      y: 10,
+    });
+  });
+
+  test("snapshot with mixed serialized and non-serialized components", () => {
+    interface CustomData {
+      timestamp: Date;
+    }
+
+    const CustomType = defineComponent<CustomData>("Custom", {
+      timestamp: new Date(0),
+    });
+
+    const serializer: ComponentSerializer<CustomData> = {
+      serialize: (component) => ({
+        timestamp: component.timestamp.getTime(),
+      }),
+      deserialize: (data) => {
+        const timestampValue = data.timestamp;
+        return {
+          timestamp: new Date(
+            typeof timestampValue === "number" ? timestampValue : 0,
+          ),
+        };
+      },
+    };
+
+    world.registerComponentSerializer("Custom", serializer);
+
+    const entity = world.createEntity();
+    world.addComponent(entity, PositionType, { x: 1, y: 2 });
+    world.addComponent(entity, CustomType, { timestamp: new Date(2024, 0, 1) });
+
+    const snapshot: WorldSnapshot = world.createSnapshot();
+
+    const newWorld = new World();
+    newWorld.registerComponentSerializer("Custom", serializer);
+    newWorld.restoreFromSnapshot(snapshot);
+
+    expect(newWorld.getComponent(entity, PositionType)).toEqual({ x: 1, y: 2 });
+    expect(newWorld.getComponent(entity, CustomType)?.timestamp.getTime()).toBe(
+      new Date(2024, 0, 1).getTime(),
+    );
+  });
+
+  test("snapshot correctly handles generation counter after restore", () => {
+    const entity1 = world.createEntity();
+    world.addComponent(entity1, PositionType, { x: 1, y: 1 });
+    world.destroyEntity(entity1);
+
+    const entity2 = world.createEntity();
+    world.addComponent(entity2, PositionType, { x: 2, y: 2 });
+
+    const snapshot: WorldSnapshot = world.createSnapshot();
+
+    const newWorld = new World();
+    newWorld.restoreFromSnapshot(snapshot);
+
+    expect(newWorld.getComponent(entity1, PositionType)).toBeUndefined();
+    expect(newWorld.getComponent(entity2, PositionType)).toEqual({
+      x: 2,
+      y: 2,
+    });
+  });
 });
