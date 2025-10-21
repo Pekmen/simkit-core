@@ -9,6 +9,7 @@ import {
   type QueryConfig,
   type WorldSnapshot,
 } from "../index.js";
+import { assert } from "./assert.js";
 
 export class World {
   private entityManager = new EntityManager();
@@ -140,6 +141,19 @@ export class World {
   }
 
   addSystem(system: System): void {
+    assert(
+      typeof system.init === "function",
+      "System must have an init method",
+    );
+    assert(
+      typeof system.update === "function",
+      "System must have an update method",
+    );
+    assert(
+      typeof system.cleanup === "function",
+      "System must have a cleanup method",
+    );
+
     this.systems.push(system);
     system.init();
   }
@@ -239,9 +253,15 @@ export class World {
     snapshot: WorldSnapshot,
     componentTypes: ComponentType<unknown>[],
   ): void {
+    assert(Array.isArray(componentTypes), "componentTypes must be an array");
+
     this.destroy();
 
     for (const componentType of componentTypes) {
+      assert(
+        typeof componentType.name === "string" && componentType.name.length > 0,
+        "Each componentType must have a valid name property",
+      );
       this.componentTypes.set(componentType.name, componentType);
     }
 

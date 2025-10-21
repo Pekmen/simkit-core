@@ -1,5 +1,6 @@
 import { INDEX_BITS, INDEX_MASK, MAX_ENTITY_INDEX } from "./constants.js";
 import type { EntityManagerSnapshot } from "./Serialization.js";
+import { assert } from "./assert.js";
 
 export type EntityId = number & { readonly __brand: "EntityId" };
 
@@ -78,6 +79,16 @@ export class EntityManager {
   }
 
   deserialize(snapshot: EntityManagerSnapshot): void {
+    assert(
+      snapshot.nextIndex >= 0 && snapshot.nextIndex <= MAX_ENTITY_INDEX + 1,
+      `Invalid nextIndex in snapshot: ${String(snapshot.nextIndex)}`,
+    );
+    assert(Array.isArray(snapshot.freeList), "freeList must be an array");
+    assert(
+      Array.isArray(snapshot.activeEntities),
+      "activeEntities must be an array",
+    );
+
     this.nextIndex = snapshot.nextIndex;
     this.freeList = [...snapshot.freeList];
     this.activeEntities = new Set(snapshot.activeEntities);
