@@ -8,23 +8,23 @@ A lightweight, type-safe Entity-Component-System (ECS) library for TypeScript
 
 Latest benchmark results for version 0.7.7 (10/19/2025):
 
-| Benchmark | Operations/sec |
-|-----------|---------------:|
-| Packed Iteration (5 queries) | 13,345 |
-| Simple Iteration | 6,380 |
-| Fragmented Iteration | 25,489 |
-| Entity Cycle | 3,425 |
-| Add/Remove Component | 4,568 |
+| Benchmark                    | Operations/sec |
+| ---------------------------- | -------------: |
+| Packed Iteration (5 queries) |         13,345 |
+| Simple Iteration             |          6,380 |
+| Fragmented Iteration         |         25,489 |
+| Entity Cycle                 |          3,425 |
+| Add/Remove Component         |          4,568 |
 
 ### Benchmark Descriptions
 
 - **Packed Iteration (5 queries)**: Tests core iteration overhead with multiple queries on 1,000 entities
-- **Simple Iteration**: Tests independent systems on entities with different component combinations  
+- **Simple Iteration**: Tests independent systems on entities with different component combinations
 - **Fragmented Iteration**: Tests iteration through fragmented dataset (26 component types)
 - **Entity Cycle**: Tests entity creation and destruction performance
 - **Add/Remove Component**: Tests component addition and removal on existing entities
 
-*Benchmarks run on Node.js v22.20.0 on linux*
+_Benchmarks run on Node.js v22.20.0 on linux_
 
 <!-- BENCHMARK_END -->
 
@@ -54,9 +54,7 @@ pnpm add simkit-core
 npm install github:Pekmen/simkit-core
 ```
 
-### Development Installation
-
-If you want to contribute or run the examples:
+### Development
 
 ```bash
 # Clone the repository
@@ -66,14 +64,12 @@ cd simkit-core
 # Install dependencies
 npm install
 
-# Run tests
+# Build and test
+npm run build
 npm test
 
-# Build the library
-npm run build
-
-# Run the example
-npm run start examples/basic.ts
+# Run examples
+npx tsx examples/basic.ts
 ```
 
 ## Features
@@ -94,7 +90,6 @@ interface Position {
   x: number;
   y: number;
 }
-
 interface Velocity {
   dx: number;
   dy: number;
@@ -105,13 +100,12 @@ const Velocity = defineComponent<Velocity>("Velocity", { dx: 0, dy: 0 });
 
 // Create a system
 class MovementSystem extends System {
-  update(deltaTime: number): void {
-    const entities = this.world.getAllEntities();
+  private query = this.world.createQuery({ with: [Position, Velocity] });
 
-    for (const entity of entities) {
+  update(deltaTime: number): void {
+    for (const entity of this.query.execute()) {
       const pos = this.world.getComponent(entity, Position);
       const vel = this.world.getComponent(entity, Velocity);
-
       if (pos && vel) {
         pos.x += vel.dx * deltaTime;
         pos.y += vel.dy * deltaTime;
@@ -124,70 +118,68 @@ class MovementSystem extends System {
 const world = new World();
 world.addSystem(new MovementSystem(world));
 
-// Create entities
+// Create entity
 const player = world.createEntity();
 world.addComponent(player, Position, { x: 0, y: 0 });
 world.addComponent(player, Velocity, { dx: 1, dy: 1 });
 
-// Run the simulation
-world.update(16); // 16ms delta time
+// Run simulation
+world.update(0.016); // 16ms delta time
 ```
 
 ## API Reference
 
 ### World
 
-The main ECS container that manages entities, components, and systems.
-
 ```typescript
 const world = new World();
 
-// Entity management
+// Entities
 const entity = world.createEntity();
 world.destroyEntity(entity);
-world.getAllEntities();
-world.getEntityCount();
 
-// Component management
+// Components
 world.addComponent(entity, ComponentType, data);
 world.removeComponent(entity, ComponentType);
 world.getComponent(entity, ComponentType);
 world.hasComponent(entity, ComponentType);
 
-// System management
+// Systems & Updates
 world.addSystem(system);
 world.update(deltaTime);
+
+// Queries
+const query = world.createQuery({ with: [Position, Velocity] });
+for (const entity of query.execute()) {
+  /* ... */
+}
+
+// Serialization
+const snapshot = world.save();
+world.load(snapshot, [Position, Velocity]);
 ```
 
 ### defineComponent
-
-Creates a component type with default values and type safety.
 
 ```typescript
 interface Health {
   current: number;
   max: number;
 }
+const Health = defineComponent<Health>("Health", { current: 100, max: 100 });
 
-const Health = defineComponent<Health>("Health", {
-  current: 100,
-  max: 100,
-});
-
-// Usage
-world.addComponent(entity, Health, { current: 80 }); // max will be 100
+// Partial data uses defaults
+world.addComponent(entity, Health, { current: 80 }); // max = 100
 ```
 
 ### System
 
-Base class for creating systems that operate on entities and components.
-
 ```typescript
 class HealthSystem extends System {
-  update(deltaTime: number): void {
-    const entities = this.world.getAllEntities();
+  private query = this.world.createQuery({ with: [Health] });
 
-    for (const entity of entities) {
+  update(deltaTime: number): void {
+    for (const entity of this.query.execute()) {
       const health = this.world.getComponent(entity, Health);
       if (health && health.current <= 0) {
         this.world.destroyEntity(entity);

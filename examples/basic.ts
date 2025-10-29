@@ -1,6 +1,4 @@
-import { defineComponent } from "../src/core/Component.js";
-import { System } from "../src/core/System.js";
-import { World } from "../src/core/World.js";
+import { World, System, defineComponent } from "../src/index.js";
 
 // Define components
 interface Position {
@@ -12,31 +10,17 @@ interface Velocity {
   dy: number;
 }
 
-const PositionComponent = defineComponent<Position>("Position", { x: 0, y: 0 });
-const VelocityComponent = defineComponent<Velocity>("Velocity", {
-  dx: 0,
-  dy: 0,
-});
-
-// Create the world
-const world = new World();
-
-// Create entities and add components
-const player = world.createEntity();
-world.addComponent(player, PositionComponent, { x: 5, y: 5 });
-world.addComponent(player, VelocityComponent, { dx: 1, dy: 1 });
-
-const enemy = world.createEntity();
-world.addComponent(enemy, PositionComponent, { x: 10, y: 10 });
-world.addComponent(enemy, VelocityComponent, { dx: -1, dy: 0 });
+const Position = defineComponent<Position>("Position", { x: 0, y: 0 });
+const Velocity = defineComponent<Velocity>("Velocity", { dx: 0, dy: 0 });
 
 // Create a system
 class MovementSystem extends System {
+  private query = this.world.createQuery({ with: [Position, Velocity] });
+
   update(deltaTime: number): void {
-    // Move all entities with Position + Velocity
-    for (const entity of [player, enemy]) {
-      const pos = this.world.getComponent(entity, PositionComponent);
-      const vel = this.world.getComponent(entity, VelocityComponent);
+    for (const entity of this.query.execute()) {
+      const pos = this.world.getComponent(entity, Position);
+      const vel = this.world.getComponent(entity, Velocity);
       if (pos && vel) {
         pos.x += vel.dx * deltaTime;
         pos.y += vel.dy * deltaTime;
@@ -45,9 +29,18 @@ class MovementSystem extends System {
   }
 }
 
-// Add system to world
-const movementSystem = new MovementSystem(world);
-world.addSystem(movementSystem);
+// Create world and add system
+const world = new World();
+world.addSystem(new MovementSystem(world));
 
-// Run an update loop
-world.update(1); // 1 time unit
+// Create entities
+const player = world.createEntity();
+world.addComponent(player, Position, { x: 0, y: 0 });
+world.addComponent(player, Velocity, { dx: 1, dy: 1 });
+
+const enemy = world.createEntity();
+world.addComponent(enemy, Position, { x: 10, y: 10 });
+world.addComponent(enemy, Velocity, { dx: -1, dy: 0 });
+
+// Run simulation
+world.update(1);
