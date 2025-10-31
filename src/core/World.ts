@@ -35,11 +35,11 @@ export class World {
         storage?.removeComponent(entityId);
       }
 
-      for (const query of this.queries) {
-        for (const componentName of componentNames) {
-          if (query.tracksComponent(componentName)) {
+      for (const componentName of componentNames) {
+        const querySet = this.queryIndex.get(componentName);
+        if (querySet) {
+          for (const query of querySet) {
             query.markDirty();
-            break;
           }
         }
       }
@@ -67,7 +67,6 @@ export class World {
       return false;
     }
 
-    // Auto-register component type on first use
     if (!this.componentTypes.has(componentType.name)) {
       this.componentTypes.set(componentType.name, componentType);
     }
