@@ -136,9 +136,10 @@ describe("World", () => {
   });
 
   test("systems are added and updated", () => {
-    const system = new TestSystem(world);
-    world.addSystem(system);
+    world.addSystem(TestSystem);
+    const system = world.getSystems()[0] as TestSystem;
 
+    expect(system).toBeDefined();
     expect(system.isInitialized).toBe(true);
 
     world.update(16);
@@ -151,12 +152,15 @@ describe("World", () => {
   });
 
   test("multiple systems are updated in order", () => {
-    const s1 = new TestSystem(world);
-    const s2 = new TestSystem(world);
+    world.addSystem(TestSystem);
+    world.addSystem(TestSystem);
 
-    world.addSystem(s1);
-    world.addSystem(s2);
+    const systems = world.getSystems();
+    const s1 = systems[0] as TestSystem;
+    const s2 = systems[1] as TestSystem;
 
+    expect(s1).toBeDefined();
+    expect(s2).toBeDefined();
     expect(s1.isInitialized).toBe(true);
     expect(s2.isInitialized).toBe(true);
 
@@ -169,9 +173,10 @@ describe("World", () => {
   });
 
   test("system cleanup when removed", () => {
-    const system = new TestSystem(world);
-    world.addSystem(system);
+    world.addSystem(TestSystem);
+    const system = world.getSystems()[0] as TestSystem;
 
+    expect(system).toBeDefined();
     expect(system.isCleanedUp).toBe(false);
 
     world.removeSystem(system);
@@ -179,12 +184,15 @@ describe("World", () => {
   });
 
   test("system cleanup when all systems cleared", () => {
-    const s1 = new TestSystem(world);
-    const s2 = new TestSystem(world);
+    world.addSystem(TestSystem);
+    world.addSystem(TestSystem);
 
-    world.addSystem(s1);
-    world.addSystem(s2);
+    const systems = world.getSystems();
+    const s1 = systems[0] as TestSystem;
+    const s2 = systems[1] as TestSystem;
 
+    expect(s1).toBeDefined();
+    expect(s2).toBeDefined();
     expect(s1.isCleanedUp).toBe(false);
     expect(s2.isCleanedUp).toBe(false);
 
@@ -196,9 +204,10 @@ describe("World", () => {
   });
 
   test("system cleanup when world destroyed", () => {
-    const system = new TestSystem(world);
-    world.addSystem(system);
+    world.addSystem(TestSystem);
+    const system = world.getSystems()[0] as TestSystem;
 
+    expect(system).toBeDefined();
     expect(system.isCleanedUp).toBe(false);
 
     world.destroy();
@@ -209,8 +218,8 @@ describe("World", () => {
   });
 
   test("getSystems returns systems array", () => {
-    const system1 = new TestSystem(world);
-    world.addSystem(system1);
+    world.addSystem(TestSystem);
+    const system1 = world.getSystems()[0] as TestSystem;
 
     const systems = world.getSystems();
     expect(systems.length).toBe(1);

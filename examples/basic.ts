@@ -31,7 +31,7 @@ class MovementSystem extends System {
 
 // Create world and add system
 const world = new World();
-world.addSystem(new MovementSystem(world));
+world.addSystem(MovementSystem);
 
 // Create entities
 const player = world.createEntity();
