@@ -40,8 +40,10 @@ describe("System", () => {
   test("should not be initialized until added to world", () => {
     expect(system.isInitialized).toBe(false);
 
-    world.addSystem(system);
-    expect(system.isInitialized).toBe(true);
+    world.addSystem(TestSystem);
+    const addedSystem = world.getSystems()[0] as TestSystem;
+    expect(addedSystem).toBeDefined();
+    expect(addedSystem.isInitialized).toBe(true);
   });
 
   test("update method should be called correctly", () => {
@@ -55,26 +57,32 @@ describe("System", () => {
   });
 
   test("should call cleanup when removed from world", () => {
-    world.addSystem(system);
-    expect(system.isCleanedUp).toBe(false);
+    world.addSystem(TestSystem);
+    const addedSystem = world.getSystems()[0] as TestSystem;
+    expect(addedSystem).toBeDefined();
+    expect(addedSystem.isCleanedUp).toBe(false);
 
-    world.removeSystem(system);
-    expect(system.isCleanedUp).toBe(true);
+    world.removeSystem(addedSystem);
+    expect(addedSystem.isCleanedUp).toBe(true);
   });
 
   test("should call cleanup when world is cleared", () => {
-    world.addSystem(system);
-    expect(system.isCleanedUp).toBe(false);
+    world.addSystem(TestSystem);
+    const addedSystem = world.getSystems()[0] as TestSystem;
+    expect(addedSystem).toBeDefined();
+    expect(addedSystem.isCleanedUp).toBe(false);
 
     world.clearSystems();
-    expect(system.isCleanedUp).toBe(true);
+    expect(addedSystem.isCleanedUp).toBe(true);
   });
 
   test("should call cleanup when world is destroyed", () => {
-    world.addSystem(system);
-    expect(system.isCleanedUp).toBe(false);
+    world.addSystem(TestSystem);
+    const addedSystem = world.getSystems()[0] as TestSystem;
+    expect(addedSystem).toBeDefined();
+    expect(addedSystem.isCleanedUp).toBe(false);
 
     world.destroy();
-    expect(system.isCleanedUp).toBe(true);
+    expect(addedSystem.isCleanedUp).toBe(true);
   });
 });

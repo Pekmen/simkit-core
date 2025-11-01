@@ -139,7 +139,12 @@ export class World {
     return this.componentRegistry.get(componentType);
   }
 
-  addSystem(system: System): void {
+  addSystem(systemOrClass: System | (new (world: World) => System)): void {
+    const system =
+      typeof systemOrClass === "function"
+        ? new systemOrClass(this)
+        : systemOrClass;
+
     assert(
       typeof system.init === "function",
       "System must have an init method",
