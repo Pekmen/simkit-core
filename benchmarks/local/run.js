@@ -19,30 +19,43 @@ const version = packageJson.version;
 /**
  * Run a benchmark function multiple times and calculate ops/sec
  */
-function runBenchmark(name, setupFn, benchFn, cleanupFn, iterations = 100) {
+function runBenchmark(name, setupFn, benchFn, cleanupFn, iterations = 1000) {
   console.log(`Running ${name}...`);
 
   // Setup
   setupFn();
 
-  // Warm up
-  for (let i = 0; i < 5; i++) {
+  // Extended warm up to let JIT compiler optimize
+  for (let i = 0; i < 50; i++) {
     benchFn();
   }
 
-  // Measure
-  const start = performance.now();
-  for (let i = 0; i < iterations; i++) {
-    benchFn();
+  // Force garbage collection if available
+  if (global.gc) {
+    global.gc();
   }
-  const end = performance.now();
 
-  const totalTime = end - start;
-  const avgTime = totalTime / iterations;
+  // Run multiple measurement rounds to reduce variance
+  const rounds = 5;
+  const measurements = [];
+
+  for (let round = 0; round < rounds; round++) {
+    const start = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      benchFn();
+    }
+    const end = performance.now();
+    measurements.push(end - start);
+  }
+
+  // Use median to reduce impact of outliers
+  measurements.sort((a, b) => a - b);
+  const medianTime = measurements[Math.floor(measurements.length / 2)];
+  const avgTime = medianTime / iterations;
   const opsPerSecond = Math.round(1000 / avgTime);
 
   console.log(
-    `  ${iterations} iterations in ${totalTime.toFixed(2)}ms (${avgTime.toFixed(2)}ms/op, ${opsPerSecond.toLocaleString()} ops/sec)`,
+    `  ${iterations * rounds} iterations in ${measurements.reduce((a, b) => a + b, 0).toFixed(2)}ms (${avgTime.toFixed(3)}ms/op, ${opsPerSecond.toLocaleString()} ops/sec)`,
   );
 
   // Cleanup
@@ -75,12 +88,34 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("\nRunning benchmarks...\n");
+  // Check if GC is available
+  if (!global.gc) {
+    console.log(
+      "\nWarning: Running without --expose-gc flag. Results may be less stable.",
+    );
+    console.log(
+      "For more stable results, run: node --expose-gc benchmarks/local/run.js\n",
+    );
+  } else {
+    console.log("\nGarbage collection enabled for stable measurements.\n");
+  }
+
+  console.log("Running benchmarks...\n");
 
   // Import benchmark functions
   const benchmarks = await import("./index.js");
 
   const results = {};
+
+  // Initial warm-up run to stabilize JIT compiler before first measurement
+  console.log("Initial JIT warm-up...");
+  benchmarks.setupPackedIteration();
+  for (let i = 0; i < 100; i++) {
+    benchmarks.benchPackedIteration();
+  }
+  benchmarks.cleanupPackedIteration();
+  if (global.gc) global.gc();
+  console.log("JIT warm-up complete.\n");
 
   // Run each benchmark
   results.packed_5 = runBenchmark(
@@ -140,6 +175,18 @@ async function main() {
   console.log("\nOperations per second:");
   for (const [key, value] of Object.entries(results)) {
     console.log(`  ${key.padEnd(20)}: ${value.toLocaleString()}`);
+  }
+
+  // Update README with latest benchmark results
+  console.log("\nUpdating README.md...");
+  try {
+    execSync("node benchmarks/update-readme.js", {
+      stdio: "inherit",
+      cwd: join(__dirname, "../.."),
+    });
+  } catch (error) {
+    console.error("Failed to update README.md");
+    process.exit(1);
   }
 }
 

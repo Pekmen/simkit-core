@@ -40,7 +40,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage",
-    "benchmark": "node benchmarks/local/run.js",
+    "benchmark": "node --expose-gc benchmarks/local/run.js",
     "benchmark:update-readme": "node benchmarks/update-readme.js",
     "prepare": "husky"
   },
