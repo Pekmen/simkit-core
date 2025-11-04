@@ -1,1 +1,7 @@
 npx lint-staged
+
+# Update README with latest benchmark results if they exist
+if [ -f "benchmarks/local/results/latest.json" ]; then
+  node benchmarks/update-readme.js
+  git add README.md
+fi

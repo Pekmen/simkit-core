@@ -57,44 +57,43 @@ export function setupPackedIteration(): void {
 }
 
 export function benchPackedIteration(): void {
-  const storageA = packedWorld.getComponentStorage(ComponentA);
-  const storageB = packedWorld.getComponentStorage(ComponentB);
-  const storageC = packedWorld.getComponentStorage(ComponentC);
-  const storageD = packedWorld.getComponentStorage(ComponentD);
-  const storageE = packedWorld.getComponentStorage(ComponentE);
-
-  if (storageA) {
-    const components = storageA.getAllComponents();
-    for (let i = 0; i < components.length; i++) {
-      components[i].value *= 2;
+  // Query-based iteration for Component A
+  for (const entity of packedQueryA.execute()) {
+    const comp = packedWorld.getComponent(entity, ComponentA);
+    if (comp) {
+      comp.value *= 2;
     }
   }
 
-  if (storageB) {
-    const components = storageB.getAllComponents();
-    for (let i = 0; i < components.length; i++) {
-      components[i].value *= 2;
+  // Query-based iteration for Component B
+  for (const entity of packedQueryB.execute()) {
+    const comp = packedWorld.getComponent(entity, ComponentB);
+    if (comp) {
+      comp.value *= 2;
     }
   }
 
-  if (storageC) {
-    const components = storageC.getAllComponents();
-    for (let i = 0; i < components.length; i++) {
-      components[i].value *= 2;
+  // Query-based iteration for Component C
+  for (const entity of packedQueryC.execute()) {
+    const comp = packedWorld.getComponent(entity, ComponentC);
+    if (comp) {
+      comp.value *= 2;
     }
   }
 
-  if (storageD) {
-    const components = storageD.getAllComponents();
-    for (let i = 0; i < components.length; i++) {
-      components[i].value *= 2;
+  // Query-based iteration for Component D
+  for (const entity of packedQueryD.execute()) {
+    const comp = packedWorld.getComponent(entity, ComponentD);
+    if (comp) {
+      comp.value *= 2;
     }
   }
 
-  if (storageE) {
-    const components = storageE.getAllComponents();
-    for (let i = 0; i < components.length; i++) {
-      components[i].value *= 2;
+  // Query-based iteration for Component E
+  for (const entity of packedQueryE.execute()) {
+    const comp = packedWorld.getComponent(entity, ComponentE);
+    if (comp) {
+      comp.value *= 2;
     }
   }
 }
@@ -255,20 +254,19 @@ export function setupFragmentedIteration(): void {
 }
 
 export function benchFragmentedIteration(): void {
-  const storageData = fragWorld.getComponentStorage(ComponentData);
-  const storageZ = fragWorld.getComponentStorage(ComponentZ);
-
-  if (storageData) {
-    const components = storageData.getAllComponents();
-    for (let i = 0; i < components.length; i++) {
-      components[i].value *= 2;
+  // Query-based iteration for ComponentData
+  for (const entity of fragQueryData.execute()) {
+    const comp = fragWorld.getComponent(entity, ComponentData);
+    if (comp) {
+      comp.value *= 2;
     }
   }
 
-  if (storageZ) {
-    const components = storageZ.getAllComponents();
-    for (let i = 0; i < components.length; i++) {
-      components[i].value *= 2;
+  // Query-based iteration for ComponentZ
+  for (const entity of fragQueryZ.execute()) {
+    const comp = fragWorld.getComponent(entity, ComponentZ);
+    if (comp) {
+      comp.value *= 2;
     }
   }
 }
