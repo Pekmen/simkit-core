@@ -2,15 +2,18 @@ import {
   ComponentStorage,
   validateQueryConfig,
   World,
+  type ComponentType,
   type EntityId,
   type QueryConfig,
   type QueryResult,
 } from "../index.js";
 
-export class Query {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class Query<TData extends readonly any[] = any[]> {
   private world: World;
   private config: QueryConfig;
   private cachedResult: EntityId[] | null = null;
+  private cachedTuples: [EntityId, ...TData][] | null = null;
   private isDirty = true;
   private trackedComponentTypes: Set<string>;
   private withStorages: (ComponentStorage<unknown> | undefined)[] | null = null;
@@ -46,13 +49,14 @@ export class Query {
 
   markDirty(): void {
     this.isDirty = true;
+    this.cachedTuples = null;
   }
 
   tracksComponent(componentName: string): boolean {
     return this.trackedComponentTypes.has(componentName);
   }
 
-  execute(): QueryResult {
+  private execute(): QueryResult {
     if (!this.isDirty && this.cachedResult !== null) {
       return this.cachedResult;
     }
@@ -142,5 +146,83 @@ export class Query {
     }
 
     return smallestSet ?? this.world.getAllEntities();
+  }
+
+  *[Symbol.iterator](): Iterator<[EntityId, ...TData]> {
+    if (this.cachedTuples) {
+      yield* this.cachedTuples;
+      return;
+    }
+
+    this.cachedTuples = [];
+    const entities = this.execute();
+
+    for (const entity of entities) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tuple: any[] = [entity];
+      for (const componentType of this.config.with ?? []) {
+        tuple.push(this.world.getComponent(entity, componentType));
+      }
+      const result = tuple as [EntityId, ...TData];
+      this.cachedTuples.push(result);
+      yield result;
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-type-parameters
+  without<T extends readonly ComponentType<any>[]>(...components: T): this {
+    this.config.without = [
+      ...(this.config.without ?? []),
+      ...components,
+    ] as ComponentType<unknown>[];
+
+    for (const ct of components) {
+      this.trackedComponentTypes.add(ct.name);
+      this.world.registerQueryForComponent(this, ct);
+    }
+
+    this.markDirty();
+    return this;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-type-parameters
+  oneOf<T extends readonly ComponentType<any>[]>(...components: T): this {
+    this.config.oneOf = [
+      ...(this.config.oneOf ?? []),
+      ...components,
+    ] as ComponentType<unknown>[];
+
+    for (const ct of components) {
+      this.trackedComponentTypes.add(ct.name);
+      this.world.registerQueryForComponent(this, ct);
+    }
+
+    this.markDirty();
+    return this;
+  }
+
+  isEmpty(): boolean {
+    return this.execute().length === 0;
+  }
+
+  count(): number {
+    return this.execute().length;
+  }
+
+  forEach(callback: (entity: EntityId, ...data: TData) => void): void {
+    for (const [entity, ...data] of this) {
+      callback(entity, ...(data as TData));
+    }
+  }
+
+  toArray(): [EntityId, ...TData][] {
+    return Array.from(this);
+  }
+
+  first(): [EntityId, ...TData] | null {
+    for (const result of this) {
+      return result;
+    }
+    return null;
   }
 }

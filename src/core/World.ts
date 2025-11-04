@@ -9,14 +9,17 @@ import {
   type QueryConfig,
   type WorldSnapshot,
 } from "../index.js";
+import type { ComponentDataTuple } from "./QueryTypes.js";
 import { assert } from "./assert.js";
 
 export class World {
   private entityManager = new EntityManager();
   private componentRegistry = new ComponentRegistry();
   private systems: System[] = [];
-  private queries: Query[] = [];
-  private queryIndex = new Map<string, Set<Query>>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private queries: Query<any>[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private queryIndex = new Map<string, Set<Query<any>>>();
   private entityComponents = new Map<EntityId, Set<string>>();
   private componentTypes = new Map<string, ComponentType<unknown>>();
 
@@ -189,7 +192,7 @@ export class World {
     }
   }
 
-  createQuery(config: QueryConfig): Query {
+  private createQuery(config: QueryConfig): Query {
     const query = new Query(this, config);
     this.queries.push(query);
 
@@ -214,6 +217,28 @@ export class World {
     }
 
     return query;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  query<const T extends readonly ComponentType<any>[]>(
+    ...components: T
+  ): Query<ComponentDataTuple<T>> {
+    return this.createQuery({
+      with: [...components] as ComponentType<unknown>[],
+    }) as Query<ComponentDataTuple<T>>;
+  }
+
+  registerQueryForComponent<T>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query: Query<any>,
+    componentType: ComponentType<T>,
+  ): void {
+    let querySet = this.queryIndex.get(componentType.name);
+    if (!querySet) {
+      querySet = new Set();
+      this.queryIndex.set(componentType.name, querySet);
+    }
+    querySet.add(query);
   }
 
   removeQuery(query: Query): boolean {

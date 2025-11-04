@@ -244,7 +244,9 @@ describe("World.createQuery", () => {
       const query1 = world.createQuery({ with: [TestComponentAType] });
       const query2 = world.createQuery({ with: [TestComponentAType] });
       expect(query1).not.toBe(query2);
-      expect(query1.execute()).toEqual(query2.execute());
+      expect(Array.from(query1).map(([e]) => e)).toEqual(
+        Array.from(query2).map(([e]) => e),
+      );
     });
 
     test("should create different queries for different configs", () => {
@@ -298,18 +300,18 @@ describe("World.createQuery", () => {
     test("should return updated results after adding components", () => {
       const query = world.createQuery({ with: [TestComponentAType] });
 
-      expect(query.execute().length).toBe(0);
+      expect(query.count()).toBe(0);
 
       const entity1 = world.createEntity();
       world.addComponent(entity1, TestComponentAType, { foo: "test1" });
 
-      expect(query.execute().length).toBe(1);
-      expect(query.execute()).toContain(entity1);
+      expect(query.count()).toBe(1);
+      expect(Array.from(query).map(([e]) => e)).toContain(entity1);
 
       const entity2 = world.createEntity();
       world.addComponent(entity2, TestComponentAType, { foo: "test2" });
 
-      expect(query.execute().length).toBe(2);
+      expect(query.count()).toBe(2);
     });
 
     test("should return updated results after removing components", () => {
@@ -320,10 +322,10 @@ describe("World.createQuery", () => {
       const query = world.createQuery({
         with: [TestComponentAType, TestComponentBType],
       });
-      expect(query.execute().length).toBe(1);
+      expect(query.count()).toBe(1);
 
       world.removeComponent(entity, TestComponentBType);
-      expect(query.execute().length).toBe(0);
+      expect(query.count()).toBe(0);
     });
 
     test("should return updated results after destroying entities", () => {
@@ -333,27 +335,27 @@ describe("World.createQuery", () => {
       world.addComponent(entity2, TestComponentAType);
 
       const query = world.createQuery({ with: [TestComponentAType] });
-      expect(query.execute().length).toBe(2);
+      expect(query.count()).toBe(2);
 
       world.destroyEntity(entity1);
-      expect(query.execute().length).toBe(1);
-      expect(query.execute()).toContain(entity2);
+      expect(query.count()).toBe(1);
+      expect(Array.from(query).map(([e]) => e)).toContain(entity2);
     });
 
     test("should handle rapid component changes correctly", () => {
       const query = world.createQuery({ with: [TestComponentAType] });
 
       const entity = world.createEntity();
-      expect(query.execute().length).toBe(0);
+      expect(query.count()).toBe(0);
 
       world.addComponent(entity, TestComponentAType);
-      expect(query.execute().length).toBe(1);
+      expect(query.count()).toBe(1);
 
       world.removeComponent(entity, TestComponentAType);
-      expect(query.execute().length).toBe(0);
+      expect(query.count()).toBe(0);
 
       world.addComponent(entity, TestComponentAType);
-      expect(query.execute().length).toBe(1);
+      expect(query.count()).toBe(1);
     });
   });
 
@@ -368,10 +370,10 @@ describe("World.createQuery", () => {
       world.addComponent(entity1, TestComponentAType);
       world.addComponent(entity2, TestComponentBType);
 
-      expect(query1.execute()).toContain(entity1);
-      expect(query1.execute()).not.toContain(entity2);
-      expect(query2.execute()).toContain(entity2);
-      expect(query2.execute()).not.toContain(entity1);
+      expect(Array.from(query1).map(([e]) => e)).toContain(entity1);
+      expect(Array.from(query1).map(([e]) => e)).not.toContain(entity2);
+      expect(Array.from(query2).map(([e]) => e)).toContain(entity2);
+      expect(Array.from(query2).map(([e]) => e)).not.toContain(entity1);
     });
 
     test("should update all queries when components change", () => {
@@ -384,15 +386,15 @@ describe("World.createQuery", () => {
       const entity = world.createEntity();
       world.addComponent(entity, TestComponentAType);
 
-      expect(queryA.execute().length).toBe(1);
-      expect(queryB.execute().length).toBe(0);
-      expect(queryBoth.execute().length).toBe(0);
+      expect(queryA.count()).toBe(1);
+      expect(queryB.count()).toBe(0);
+      expect(queryBoth.count()).toBe(0);
 
       world.addComponent(entity, TestComponentBType);
 
-      expect(queryA.execute().length).toBe(1);
-      expect(queryB.execute().length).toBe(1);
-      expect(queryBoth.execute().length).toBe(1);
+      expect(queryA.count()).toBe(1);
+      expect(queryB.count()).toBe(1);
+      expect(queryBoth.count()).toBe(1);
     });
   });
 
@@ -406,8 +408,8 @@ describe("World.createQuery", () => {
       world.addComponent(entity1, TestComponentAType);
       world.addComponent(entity1, TestComponentBType);
 
-      const result1 = movingEntities.execute();
-      const result2 = movingEntities.execute();
+      const result1 = Array.from(movingEntities).map(([e]) => e);
+      const result2 = Array.from(movingEntities).map(([e]) => e);
 
       expect(result1).toContain(entity1);
       expect(result2).toContain(entity1);
@@ -418,20 +420,20 @@ describe("World.createQuery", () => {
 
       const componentAQuery = world.createQuery({ with: [TestComponentAType] });
 
-      expect(componentAQuery.execute().length).toBe(0);
+      expect(componentAQuery.count()).toBe(0);
 
       world.addComponent(entity, TestComponentAType);
-      expect(componentAQuery.execute().length).toBe(1);
+      expect(componentAQuery.count()).toBe(1);
 
       world.removeComponent(entity, TestComponentAType);
-      expect(componentAQuery.execute().length).toBe(0);
+      expect(componentAQuery.count()).toBe(0);
     });
   });
 
   describe("edge cases", () => {
     test("should work with no entities", () => {
       const query = world.createQuery({ with: [TestComponentAType] });
-      expect(query.execute()).toEqual([]);
+      expect(Array.from(query).map(([e]) => e)).toEqual([]);
     });
 
     test("should work with entities but no matching components", () => {
@@ -439,7 +441,7 @@ describe("World.createQuery", () => {
       world.createEntity();
 
       const query = world.createQuery({ with: [TestComponentAType] });
-      expect(query.execute()).toEqual([]);
+      expect(Array.from(query).map(([e]) => e)).toEqual([]);
     });
 
     test("should handle queries created before and after entity creation", () => {
@@ -450,8 +452,10 @@ describe("World.createQuery", () => {
 
       const queryAfter = world.createQuery({ with: [TestComponentAType] });
 
-      expect(queryBefore.execute()).toEqual(queryAfter.execute());
-      expect(queryBefore.execute()).toContain(entity);
+      expect(Array.from(queryBefore).map(([e]) => e)).toEqual(
+        Array.from(queryAfter).map(([e]) => e),
+      );
+      expect(Array.from(queryBefore).map(([e]) => e)).toContain(entity);
     });
   });
 });
@@ -687,7 +691,7 @@ describe("World serialization", () => {
       world2.load(snapshot, [TestComponentAType, TestComponentBType]);
 
       const query = world2.createQuery({ with: [TestComponentAType] });
-      const results = query.execute();
+      const results = Array.from(query).map(([e]) => e);
 
       expect(results.length).toBe(2);
       expect(results).toContain(e1);
@@ -719,7 +723,7 @@ describe("World serialization", () => {
         with: [TestComponentAType],
         without: [TestComponentBType],
       });
-      const results = query.execute();
+      const results = Array.from(query).map(([e]) => e);
 
       expect(results.length).toBe(1);
       expect(results).toContain(e2);

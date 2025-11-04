@@ -49,7 +49,7 @@ describe("Query", () => {
     });
   });
 
-  describe("execute - with constraint", () => {
+  describe("iterator - with constraint", () => {
     test("should return entities that have all required components", () => {
       const entity1 = world.createEntity();
       const entity2 = world.createEntity();
@@ -62,8 +62,8 @@ describe("Query", () => {
 
       world.addComponent(entity3, ComponentB, { dx: 3, dy: 3 });
 
-      const query = world.createQuery({ with: [ComponentA, ComponentB] });
-      const result = query.execute();
+      const query = world.query(ComponentA, ComponentB);
+      const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
       expect(result).not.toContain(entity2);
@@ -75,8 +75,8 @@ describe("Query", () => {
       const entity1 = world.createEntity();
       world.addComponent(entity1, ComponentA);
 
-      const query = world.createQuery({ with: [ComponentB] });
-      const result = query.execute();
+      const query = world.query(ComponentB);
+      const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toEqual([]);
     });
@@ -88,8 +88,8 @@ describe("Query", () => {
       world.addComponent(entity1, ComponentA);
       world.addComponent(entity2, ComponentB);
 
-      const query = world.createQuery({ with: [ComponentA] });
-      const result = query.execute();
+      const query = world.query(ComponentA);
+      const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
       expect(result).not.toContain(entity2);
@@ -97,7 +97,7 @@ describe("Query", () => {
     });
   });
 
-  describe("execute - without constraint", () => {
+  describe("createQuery - without constraint", () => {
     test("should return entities that don't have excluded components", () => {
       const entity1 = world.createEntity();
       const entity2 = world.createEntity();
@@ -108,7 +108,7 @@ describe("Query", () => {
       world.addComponent(entity2, ComponentB);
 
       const query = world.createQuery({ without: [ComponentB] });
-      const result = query.execute();
+      const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
       expect(result).not.toContain(entity2);
@@ -127,7 +127,7 @@ describe("Query", () => {
       world.addComponent(entity3, ComponentC);
 
       const query = world.createQuery({ without: [ComponentB, ComponentC] });
-      const result = query.execute();
+      const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
       expect(result).not.toContain(entity2);
@@ -137,7 +137,7 @@ describe("Query", () => {
     });
   });
 
-  describe("execute - oneOf constraint", () => {
+  describe("createQuery - oneOf constraint", () => {
     test("should return entities that have at least one of the specified components", () => {
       const entity1 = world.createEntity();
       const entity2 = world.createEntity();
@@ -150,7 +150,7 @@ describe("Query", () => {
       world.addComponent(entity3, ComponentB);
 
       const query = world.createQuery({ oneOf: [ComponentA, ComponentB] });
-      const result = query.execute();
+      const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
       expect(result).toContain(entity2);
@@ -164,13 +164,13 @@ describe("Query", () => {
       world.addComponent(entity1, ComponentC);
 
       const query = world.createQuery({ oneOf: [ComponentA, ComponentB] });
-      const result = query.execute();
+      const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toEqual([]);
     });
   });
 
-  describe("execute - combined constraints", () => {
+  describe("createQuery - combined constraints", () => {
     test("should handle with + without constraints", () => {
       const entity1 = world.createEntity();
       const entity2 = world.createEntity();
@@ -188,7 +188,7 @@ describe("Query", () => {
         with: [ComponentA],
         without: [ComponentB],
       });
-      const result = query.execute();
+      const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
       expect(result).not.toContain(entity2);
@@ -213,7 +213,7 @@ describe("Query", () => {
         with: [ComponentA],
         oneOf: [ComponentC, ComponentD],
       });
-      const result = query.execute();
+      const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
       expect(result).toContain(entity2);
@@ -236,7 +236,7 @@ describe("Query", () => {
         without: [ComponentA],
         oneOf: [ComponentC, ComponentD],
       });
-      const result = query.execute();
+      const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
       expect(result).toContain(entity2);
@@ -264,7 +264,7 @@ describe("Query", () => {
         without: [ComponentB],
         oneOf: [ComponentC, ComponentD],
       });
-      const result = query.execute();
+      const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
       expect(result).not.toContain(entity2);
@@ -276,7 +276,7 @@ describe("Query", () => {
   describe("edge cases", () => {
     test("should work with no entities in world", () => {
       const query = world.createQuery({ with: [ComponentA] });
-      const result = query.execute();
+      const result = Array.from(query).map(([entity]) => entity);
       expect(result).toEqual([]);
     });
 
@@ -288,11 +288,11 @@ describe("Query", () => {
       world.addComponent(entity2, ComponentA);
 
       const query = world.createQuery({ with: [ComponentA] });
-      let result = query.execute();
+      let result = Array.from(query).map(([entity]) => entity);
       expect(result.length).toBe(2);
 
       world.destroyEntity(entity1);
-      result = query.execute();
+      result = Array.from(query).map(([entity]) => entity);
       expect(result.length).toBe(1);
       expect(result).toContain(entity2);
     });
@@ -303,11 +303,11 @@ describe("Query", () => {
       world.addComponent(entity, ComponentB);
 
       const query = world.createQuery({ with: [ComponentA, ComponentB] });
-      let result = query.execute();
+      let result = Array.from(query).map(([entity]) => entity);
       expect(result.length).toBe(1);
 
       world.removeComponent(entity, ComponentB);
-      result = query.execute();
+      result = Array.from(query).map(([entity]) => entity);
       expect(result.length).toBe(0);
     });
   });
