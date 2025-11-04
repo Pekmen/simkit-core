@@ -1,31 +1,14 @@
 import {
-  ComponentStorage,
   validateQueryConfig,
   World,
   type ComponentType,
   type EntityId,
   type QueryConfig,
-  type QueryResult,
 } from "../index.js";
 
-/**
- * Extract the component data type from ComponentType<T>
- *
- * @example
- * type Position = { x: number; y: number };
- * const PositionComponent: ComponentType<Position> = ...;
- * type Data = ExtractComponentData<typeof PositionComponent>; // Position
- */
 export type ExtractComponentData<C> =
   C extends ComponentType<infer T> ? T : never;
 
-/**
- * Map an array of ComponentType to a tuple of their data types
- *
- * @example
- * type Tuple = ComponentDataTuple<[ComponentType<Position>, ComponentType<Velocity>]>;
- * // Result: [Position, Velocity]
- */
 export type ComponentDataTuple<T extends readonly ComponentType<unknown>[]> = {
   [K in keyof T]: T[K] extends ComponentType<infer U> ? U : never;
 };
@@ -33,15 +16,8 @@ export type ComponentDataTuple<T extends readonly ComponentType<unknown>[]> = {
 export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   private world: World;
   private config: QueryConfig;
-  private cachedResult: EntityId[] | null = null;
   private cachedTuples: [EntityId, ...TData][] | null = null;
-  private isDirty = true;
   private trackedComponentTypes: Set<string>;
-  private withStorages: (ComponentStorage<unknown> | undefined)[] | null = null;
-  private withoutStorages: (ComponentStorage<unknown> | undefined)[] | null =
-    null;
-  private oneOfStorages: (ComponentStorage<unknown> | undefined)[] | null =
-    null;
 
   constructor(world: World, config: QueryConfig) {
     validateQueryConfig(config);
@@ -69,7 +45,6 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   }
 
   markDirty(): void {
-    this.isDirty = true;
     this.cachedTuples = null;
   }
 
@@ -77,57 +52,42 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
     return this.trackedComponentTypes.has(componentName);
   }
 
-  private execute(): QueryResult {
-    if (!this.isDirty && this.cachedResult !== null) {
-      return this.cachedResult;
-    }
+  private buildTuples(): [EntityId, ...TData][] {
+    const withStorages = this.config.with?.map((ct) =>
+      this.world.getComponentStorage(ct),
+    );
+    const withoutStorages = this.config.without?.map((ct) =>
+      this.world.getComponentStorage(ct),
+    );
+    const oneOfStorages = this.config.oneOf?.map((ct) =>
+      this.world.getComponentStorage(ct),
+    );
 
-    if (this.isDirty) {
-      if (this.config.with) {
-        this.withStorages = this.config.with.map((ct) =>
-          this.world.getComponentStorage(ct),
-        );
-      }
-      if (this.config.without) {
-        this.withoutStorages = this.config.without.map((ct) =>
-          this.world.getComponentStorage(ct),
-        );
-      }
-      if (this.config.oneOf) {
-        this.oneOfStorages = this.config.oneOf.map((ct) =>
-          this.world.getComponentStorage(ct),
-        );
-      }
-    }
-
-    if (this.cachedResult === null) {
-      this.cachedResult = [];
-    } else {
-      this.cachedResult.length = 0;
-    }
-
+    const result: [EntityId, ...TData][] = [];
     const entitiesToCheck = this.getOptimalEntitySet();
+    const componentTypes = this.config.with ?? [];
+    const componentCount = componentTypes.length;
 
     entityLoop: for (const entity of entitiesToCheck) {
-      if (this.withStorages) {
-        for (const storage of this.withStorages) {
+      if (withStorages) {
+        for (const storage of withStorages) {
           if (!storage?.hasComponent(entity)) {
             continue entityLoop;
           }
         }
       }
 
-      if (this.withoutStorages) {
-        for (const storage of this.withoutStorages) {
+      if (withoutStorages) {
+        for (const storage of withoutStorages) {
           if (storage?.hasComponent(entity)) {
             continue entityLoop;
           }
         }
       }
 
-      if (this.oneOfStorages) {
+      if (oneOfStorages) {
         let hasOneOf = false;
-        for (const storage of this.oneOfStorages) {
+        for (const storage of oneOfStorages) {
           if (storage?.hasComponent(entity)) {
             hasOneOf = true;
             break;
@@ -138,12 +98,19 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         }
       }
 
-      this.cachedResult.push(entity);
+      const tuple: unknown[] = new Array(componentCount + 1);
+      tuple[0] = entity;
+
+      for (let j = 0; j < componentCount; j++) {
+        const componentType = componentTypes[j];
+        if (componentType === undefined) continue;
+        tuple[j + 1] = this.world.getComponent(entity, componentType);
+      }
+
+      result.push(tuple as [EntityId, ...TData]);
     }
 
-    this.isDirty = false;
-
-    return this.cachedResult;
+    return result;
   }
 
   private getOptimalEntitySet(): Iterable<EntityId> {
@@ -175,29 +142,8 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
       return;
     }
 
-    const entities = this.execute();
-    const componentTypes = this.config.with ?? [];
-    const componentCount = componentTypes.length;
-
-    this.cachedTuples = new Array(entities.length);
-
-    for (let i = 0; i < entities.length; i++) {
-      const entity = entities[i];
-      if (entity === undefined) continue;
-
-      const tuple: unknown[] = new Array(componentCount + 1);
-      tuple[0] = entity;
-
-      for (let j = 0; j < componentCount; j++) {
-        const componentType = componentTypes[j];
-        if (componentType === undefined) continue;
-        tuple[j + 1] = this.world.getComponent(entity, componentType);
-      }
-
-      const result = tuple as [EntityId, ...TData];
-      this.cachedTuples[i] = result;
-      yield result;
-    }
+    this.cachedTuples = this.buildTuples();
+    yield* this.cachedTuples;
   }
 
   without(...components: readonly ComponentType<unknown>[]): this {
@@ -231,21 +177,11 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   }
 
   isEmpty(): boolean {
-    return this.execute().length === 0;
+    return this.first() === null;
   }
 
   count(): number {
-    return this.execute().length;
-  }
-
-  forEach(callback: (entity: EntityId, ...data: TData) => void): void {
-    for (const [entity, ...data] of this) {
-      callback(entity, ...(data as TData));
-    }
-  }
-
-  toArray(): [EntityId, ...TData][] {
-    return Array.from(this);
+    return Array.from(this).length;
   }
 
   first(): [EntityId, ...TData] | null {
