@@ -9,17 +9,15 @@ import {
   type QueryConfig,
   type WorldSnapshot,
 } from "../index.js";
-import type { ComponentDataTuple } from "./QueryTypes.js";
+import type { ComponentDataTuple } from "./Query.js";
 import { assert } from "./assert.js";
 
 export class World {
   private entityManager = new EntityManager();
   private componentRegistry = new ComponentRegistry();
   private systems: System[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private queries: Query<any>[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private queryIndex = new Map<string, Set<Query<any>>>();
+  private queries: Query[] = [];
+  private queryIndex = new Map<string, Set<Query>>();
   private entityComponents = new Map<EntityId, Set<string>>();
   private componentTypes = new Map<string, ComponentType<unknown>>();
 
@@ -219,8 +217,7 @@ export class World {
     return query;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  query<const T extends readonly ComponentType<any>[]>(
+  query<const T extends readonly ComponentType<unknown>[]>(
     ...components: T
   ): Query<ComponentDataTuple<T>> {
     return this.createQuery({
@@ -229,8 +226,7 @@ export class World {
   }
 
   registerQueryForComponent<T>(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    query: Query<any>,
+    query: Query,
     componentType: ComponentType<T>,
   ): void {
     let querySet = this.queryIndex.get(componentType.name);

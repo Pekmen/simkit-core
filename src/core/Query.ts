@@ -8,8 +8,29 @@ import {
   type QueryResult,
 } from "../index.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class Query<TData extends readonly any[] = any[]> {
+/**
+ * Extract the component data type from ComponentType<T>
+ *
+ * @example
+ * type Position = { x: number; y: number };
+ * const PositionComponent: ComponentType<Position> = ...;
+ * type Data = ExtractComponentData<typeof PositionComponent>; // Position
+ */
+export type ExtractComponentData<C> =
+  C extends ComponentType<infer T> ? T : never;
+
+/**
+ * Map an array of ComponentType to a tuple of their data types
+ *
+ * @example
+ * type Tuple = ComponentDataTuple<[ComponentType<Position>, ComponentType<Velocity>]>;
+ * // Result: [Position, Velocity]
+ */
+export type ComponentDataTuple<T extends readonly ComponentType<unknown>[]> = {
+  [K in keyof T]: T[K] extends ComponentType<infer U> ? U : never;
+};
+
+export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   private world: World;
   private config: QueryConfig;
   private cachedResult: EntityId[] | null = null;
@@ -154,23 +175,32 @@ export class Query<TData extends readonly any[] = any[]> {
       return;
     }
 
-    this.cachedTuples = [];
     const entities = this.execute();
+    const componentTypes = this.config.with ?? [];
+    const componentCount = componentTypes.length;
 
-    for (const entity of entities) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tuple: any[] = [entity];
-      for (const componentType of this.config.with ?? []) {
-        tuple.push(this.world.getComponent(entity, componentType));
+    this.cachedTuples = new Array(entities.length);
+
+    for (let i = 0; i < entities.length; i++) {
+      const entity = entities[i];
+      if (entity === undefined) continue;
+
+      const tuple: unknown[] = new Array(componentCount + 1);
+      tuple[0] = entity;
+
+      for (let j = 0; j < componentCount; j++) {
+        const componentType = componentTypes[j];
+        if (componentType === undefined) continue;
+        tuple[j + 1] = this.world.getComponent(entity, componentType);
       }
+
       const result = tuple as [EntityId, ...TData];
-      this.cachedTuples.push(result);
+      this.cachedTuples[i] = result;
       yield result;
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-type-parameters
-  without<T extends readonly ComponentType<any>[]>(...components: T): this {
+  without(...components: readonly ComponentType<unknown>[]): this {
     this.config.without = [
       ...(this.config.without ?? []),
       ...components,
@@ -185,8 +215,7 @@ export class Query<TData extends readonly any[] = any[]> {
     return this;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unnecessary-type-parameters
-  oneOf<T extends readonly ComponentType<any>[]>(...components: T): this {
+  oneOf(...components: readonly ComponentType<unknown>[]): this {
     this.config.oneOf = [
       ...(this.config.oneOf ?? []),
       ...components,
