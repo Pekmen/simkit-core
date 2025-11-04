@@ -15,16 +15,12 @@ const Velocity = defineComponent<Velocity>("Velocity", { dx: 0, dy: 0 });
 
 // Create a system
 class MovementSystem extends System {
-  private query = this.world.createQuery({ with: [Position, Velocity] });
+  private query = this.world.query(Position, Velocity);
 
   update(deltaTime: number): void {
-    for (const entity of this.query.execute()) {
-      const pos = this.world.getComponent(entity, Position);
-      const vel = this.world.getComponent(entity, Velocity);
-      if (pos && vel) {
-        pos.x += vel.dx * deltaTime;
-        pos.y += vel.dy * deltaTime;
-      }
+    for (const [, pos, vel] of this.query) {
+      pos.x += vel.dx * deltaTime;
+      pos.y += vel.dy * deltaTime;
     }
   }
 }

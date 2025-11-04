@@ -47,36 +47,31 @@ describe("Packed Iteration (5 queries)", () => {
     }
 
     // Create queries
-    const queryA = world.createQuery({ with: [ComponentA] });
-    const queryB = world.createQuery({ with: [ComponentB] });
-    const queryC = world.createQuery({ with: [ComponentC] });
-    const queryD = world.createQuery({ with: [ComponentD] });
-    const queryE = world.createQuery({ with: [ComponentE] });
+    const queryA = world.query(ComponentA);
+    const queryB = world.query(ComponentB);
+    const queryC = world.query(ComponentC);
+    const queryD = world.query(ComponentD);
+    const queryE = world.query(ComponentE);
 
     // Test: Iterate through all entities with each component and double its value
-    for (const entity of queryA.execute()) {
-      const comp = world.getComponent(entity, ComponentA);
-      if (comp) comp.value *= 2;
+    for (const [entity, comp] of queryA) {
+      comp.value *= 2;
     }
 
-    for (const entity of queryB.execute()) {
-      const comp = world.getComponent(entity, ComponentB);
-      if (comp) comp.value *= 2;
+    for (const [entity, comp] of queryB) {
+      comp.value *= 2;
     }
 
-    for (const entity of queryC.execute()) {
-      const comp = world.getComponent(entity, ComponentC);
-      if (comp) comp.value *= 2;
+    for (const [entity, comp] of queryC) {
+      comp.value *= 2;
     }
 
-    for (const entity of queryD.execute()) {
-      const comp = world.getComponent(entity, ComponentD);
-      if (comp) comp.value *= 2;
+    for (const [entity, comp] of queryD) {
+      comp.value *= 2;
     }
 
-    for (const entity of queryE.execute()) {
-      const comp = world.getComponent(entity, ComponentE);
-      if (comp) comp.value *= 2;
+    for (const [entity, comp] of queryE) {
+      comp.value *= 2;
     }
 
     world.destroy();
@@ -122,41 +117,29 @@ describe("Simple Iteration", () => {
     }
 
     // Create queries for the three systems
-    const queryAB = world.createQuery({ with: [ComponentA, ComponentB] });
-    const queryCD = world.createQuery({ with: [ComponentC, ComponentD] });
-    const queryCE = world.createQuery({ with: [ComponentC, ComponentE] });
+    const queryAB = world.query(ComponentA, ComponentB);
+    const queryCD = world.query(ComponentC, ComponentD);
+    const queryCE = world.query(ComponentC, ComponentE);
 
     // System 1: (A, B) - swap values
-    for (const entity of queryAB.execute()) {
-      const compA = world.getComponent(entity, ComponentA);
-      const compB = world.getComponent(entity, ComponentB);
-      if (compA && compB) {
-        const temp = compA.value;
-        compA.value = compB.value;
-        compB.value = temp;
-      }
+    for (const [entity, compA, compB] of queryAB) {
+      const temp = compA.value;
+      compA.value = compB.value;
+      compB.value = temp;
     }
 
     // System 2: (C, D) - swap values
-    for (const entity of queryCD.execute()) {
-      const compC = world.getComponent(entity, ComponentC);
-      const compD = world.getComponent(entity, ComponentD);
-      if (compC && compD) {
-        const temp = compC.value;
-        compC.value = compD.value;
-        compD.value = temp;
-      }
+    for (const [entity, compC, compD] of queryCD) {
+      const temp = compC.value;
+      compC.value = compD.value;
+      compD.value = temp;
     }
 
     // System 3: (C, E) - swap values
-    for (const entity of queryCE.execute()) {
-      const compC = world.getComponent(entity, ComponentC);
-      const compE = world.getComponent(entity, ComponentE);
-      if (compC && compE) {
-        const temp = compC.value;
-        compC.value = compE.value;
-        compE.value = temp;
-      }
+    for (const [entity, compC, compE] of queryCE) {
+      const temp = compC.value;
+      compC.value = compE.value;
+      compE.value = temp;
     }
 
     world.destroy();
@@ -206,19 +189,17 @@ describe("Fragmented Iteration", () => {
     }
 
     // Create queries
-    const queryData = world.createQuery({ with: [ComponentData] });
-    const queryZ = world.createQuery({ with: [ComponentZ] });
+    const queryData = world.query(ComponentData);
+    const queryZ = world.query(ComponentZ);
 
     // Test: Iterate through all entities with Data component and double its value
-    for (const entity of queryData.execute()) {
-      const comp = world.getComponent(entity, ComponentData);
-      if (comp) comp.value *= 2;
+    for (const [entity, comp] of queryData) {
+      comp.value *= 2;
     }
 
     // Iterate through all entities with Z component and double its value
-    for (const entity of queryZ.execute()) {
-      const comp = world.getComponent(entity, ComponentZ);
-      if (comp) comp.value *= 2;
+    for (const [entity, comp] of queryZ) {
+      comp.value *= 2;
     }
 
     world.destroy();
@@ -236,19 +217,19 @@ describe("Entity Cycle", () => {
     }
 
     // Create queries
-    const queryA = world.createQuery({ with: [ComponentA] });
-    const queryB = world.createQuery({ with: [ComponentB] });
+    const queryA = world.query(ComponentA);
+    const queryB = world.query(ComponentB);
 
     // Test: Iterate through all entities and create 1 entity with B component
     const entitiesToCreate: number[] = [];
-    for (const _entity of queryA.execute()) {
+    for (const [_entity] of queryA) {
       const newEntity = world.createEntity();
       world.addComponent(newEntity, ComponentB, { value: 1 });
       entitiesToCreate.push(newEntity);
     }
 
     // Then iterate through all entities with B component and destroy them
-    for (const entity of queryB.execute()) {
+    for (const [entity] of queryB) {
       world.destroyEntity(entity);
     }
 
@@ -267,15 +248,15 @@ describe("Add / Remove", () => {
     }
 
     // Create query
-    const queryA = world.createQuery({ with: [ComponentA] });
+    const queryA = world.query(ComponentA);
 
     // Test: Iterate through all entities, adding B component
-    for (const entity of queryA.execute()) {
+    for (const [entity] of queryA) {
       world.addComponent(entity, ComponentB, { value: 1 });
     }
 
     // Then iterate through all entities again, removing their B component
-    for (const entity of queryA.execute()) {
+    for (const [entity] of queryA) {
       world.removeComponent(entity, ComponentB);
     }
 

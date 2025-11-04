@@ -9,6 +9,7 @@ import {
   type QueryConfig,
   type WorldSnapshot,
 } from "../index.js";
+import type { ComponentDataTuple } from "./Query.js";
 import { assert } from "./assert.js";
 
 export class World {
@@ -189,7 +190,7 @@ export class World {
     }
   }
 
-  createQuery(config: QueryConfig): Query {
+  private createQuery(config: QueryConfig): Query {
     const query = new Query(this, config);
     this.queries.push(query);
 
@@ -214,6 +215,26 @@ export class World {
     }
 
     return query;
+  }
+
+  query<const T extends readonly ComponentType<unknown>[]>(
+    ...components: T
+  ): Query<ComponentDataTuple<T>> {
+    return this.createQuery({
+      with: [...components] as ComponentType<unknown>[],
+    }) as Query<ComponentDataTuple<T>>;
+  }
+
+  registerQueryForComponent<T>(
+    query: Query,
+    componentType: ComponentType<T>,
+  ): void {
+    let querySet = this.queryIndex.get(componentType.name);
+    if (!querySet) {
+      querySet = new Set();
+      this.queryIndex.set(componentType.name, querySet);
+    }
+    querySet.add(query);
   }
 
   removeQuery(query: Query): boolean {

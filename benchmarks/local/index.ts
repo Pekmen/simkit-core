@@ -29,11 +29,11 @@ const ComponentG = defineComponent("G", { value: 0 });
 const ComponentF = defineComponent("F", { value: 0 });
 
 let packedWorld: World;
-let packedQueryA: Query;
-let packedQueryB: Query;
-let packedQueryC: Query;
-let packedQueryD: Query;
-let packedQueryE: Query;
+let packedQueryA: Query<any>;
+let packedQueryB: Query<any>;
+let packedQueryC: Query<any>;
+let packedQueryD: Query<any>;
+let packedQueryE: Query<any>;
 
 export function setupPackedIteration(): void {
   packedWorld = new World();
@@ -49,52 +49,37 @@ export function setupPackedIteration(): void {
   }
 
   // Create queries
-  packedQueryA = packedWorld.createQuery({ with: [ComponentA] });
-  packedQueryB = packedWorld.createQuery({ with: [ComponentB] });
-  packedQueryC = packedWorld.createQuery({ with: [ComponentC] });
-  packedQueryD = packedWorld.createQuery({ with: [ComponentD] });
-  packedQueryE = packedWorld.createQuery({ with: [ComponentE] });
+  packedQueryA = packedWorld.query(ComponentA);
+  packedQueryB = packedWorld.query(ComponentB);
+  packedQueryC = packedWorld.query(ComponentC);
+  packedQueryD = packedWorld.query(ComponentD);
+  packedQueryE = packedWorld.query(ComponentE);
 }
 
 export function benchPackedIteration(): void {
   // Query-based iteration for Component A
-  for (const entity of packedQueryA.execute()) {
-    const comp = packedWorld.getComponent(entity, ComponentA);
-    if (comp) {
-      comp.value *= 2;
-    }
+  for (const [entity, comp] of packedQueryA) {
+    comp.value *= 2;
   }
 
   // Query-based iteration for Component B
-  for (const entity of packedQueryB.execute()) {
-    const comp = packedWorld.getComponent(entity, ComponentB);
-    if (comp) {
-      comp.value *= 2;
-    }
+  for (const [entity, comp] of packedQueryB) {
+    comp.value *= 2;
   }
 
   // Query-based iteration for Component C
-  for (const entity of packedQueryC.execute()) {
-    const comp = packedWorld.getComponent(entity, ComponentC);
-    if (comp) {
-      comp.value *= 2;
-    }
+  for (const [entity, comp] of packedQueryC) {
+    comp.value *= 2;
   }
 
   // Query-based iteration for Component D
-  for (const entity of packedQueryD.execute()) {
-    const comp = packedWorld.getComponent(entity, ComponentD);
-    if (comp) {
-      comp.value *= 2;
-    }
+  for (const [entity, comp] of packedQueryD) {
+    comp.value *= 2;
   }
 
   // Query-based iteration for Component E
-  for (const entity of packedQueryE.execute()) {
-    const comp = packedWorld.getComponent(entity, ComponentE);
-    if (comp) {
-      comp.value *= 2;
-    }
+  for (const [entity, comp] of packedQueryE) {
+    comp.value *= 2;
   }
 }
 
@@ -103,9 +88,9 @@ export function cleanupPackedIteration(): void {
 }
 
 let simpleWorld: World;
-let simpleQueryAB: Query;
-let simpleQueryCD: Query;
-let simpleQueryCE: Query;
+let simpleQueryAB: Query<any>;
+let simpleQueryCD: Query<any>;
+let simpleQueryCE: Query<any>;
 
 export function setupSimpleIteration(): void {
   simpleWorld = new World();
@@ -143,61 +128,29 @@ export function setupSimpleIteration(): void {
     simpleWorld.addComponent(entity, ComponentE, { value: 1 });
   }
 
-  // Create queries for the three systems
-  simpleQueryAB = simpleWorld.createQuery({ with: [ComponentA, ComponentB] });
-  simpleQueryCD = simpleWorld.createQuery({ with: [ComponentC, ComponentD] });
-  simpleQueryCE = simpleWorld.createQuery({ with: [ComponentC, ComponentE] });
+  // Create and store queries
+  simpleQueryAB = simpleWorld.query(ComponentA, ComponentB);
+  simpleQueryCD = simpleWorld.query(ComponentC, ComponentD);
+  simpleQueryCE = simpleWorld.query(ComponentC, ComponentE);
 }
 
 export function benchSimpleIteration(): void {
-  const storageA = simpleWorld.getComponentStorage(ComponentA);
-  const storageB = simpleWorld.getComponentStorage(ComponentB);
-
-  if (storageA && storageB) {
-    const entities = simpleQueryAB.execute();
-    for (let i = 0; i < entities.length; i++) {
-      const entity = entities[i];
-      const compA = storageA.getComponent(entity);
-      const compB = storageB.getComponent(entity);
-      if (compA && compB) {
-        const temp = compA.value;
-        compA.value = compB.value;
-        compB.value = temp;
-      }
-    }
+  for (const [entity, compA, compB] of simpleQueryAB) {
+    const temp = compA.value;
+    compA.value = compB.value;
+    compB.value = temp;
   }
 
-  const storageC = simpleWorld.getComponentStorage(ComponentC);
-  const storageD = simpleWorld.getComponentStorage(ComponentD);
-
-  if (storageC && storageD) {
-    const entities = simpleQueryCD.execute();
-    for (let i = 0; i < entities.length; i++) {
-      const entity = entities[i];
-      const compC = storageC.getComponent(entity);
-      const compD = storageD.getComponent(entity);
-      if (compC && compD) {
-        const temp = compC.value;
-        compC.value = compD.value;
-        compD.value = temp;
-      }
-    }
+  for (const [entity, compC, compD] of simpleQueryCD) {
+    const temp = compC.value;
+    compC.value = compD.value;
+    compD.value = temp;
   }
 
-  const storageE = simpleWorld.getComponentStorage(ComponentE);
-
-  if (storageC && storageE) {
-    const entities = simpleQueryCE.execute();
-    for (let i = 0; i < entities.length; i++) {
-      const entity = entities[i];
-      const compC = storageC.getComponent(entity);
-      const compE = storageE.getComponent(entity);
-      if (compC && compE) {
-        const temp = compC.value;
-        compC.value = compE.value;
-        compE.value = temp;
-      }
-    }
+  for (const [entity, compC, compE] of simpleQueryCE) {
+    const temp = compC.value;
+    compC.value = compE.value;
+    compE.value = temp;
   }
 }
 
@@ -206,8 +159,8 @@ export function cleanupSimpleIteration(): void {
 }
 
 let fragWorld: World;
-let fragQueryData: Query;
-let fragQueryZ: Query;
+let fragQueryData: Query<any>;
+let fragQueryZ: Query<any>;
 
 export function setupFragmentedIteration(): void {
   fragWorld = new World();
@@ -249,25 +202,20 @@ export function setupFragmentedIteration(): void {
     }
   }
 
-  fragQueryData = fragWorld.createQuery({ with: [ComponentData] });
-  fragQueryZ = fragWorld.createQuery({ with: [ComponentZ] });
+  // Create and store queries
+  fragQueryData = fragWorld.query(ComponentData);
+  fragQueryZ = fragWorld.query(ComponentZ);
 }
 
 export function benchFragmentedIteration(): void {
   // Query-based iteration for ComponentData
-  for (const entity of fragQueryData.execute()) {
-    const comp = fragWorld.getComponent(entity, ComponentData);
-    if (comp) {
-      comp.value *= 2;
-    }
+  for (const [entity, comp] of fragQueryData) {
+    comp.value *= 2;
   }
 
   // Query-based iteration for ComponentZ
-  for (const entity of fragQueryZ.execute()) {
-    const comp = fragWorld.getComponent(entity, ComponentZ);
-    if (comp) {
-      comp.value *= 2;
-    }
+  for (const [entity, comp] of fragQueryZ) {
+    comp.value *= 2;
   }
 }
 
@@ -276,8 +224,8 @@ export function cleanupFragmentedIteration(): void {
 }
 
 let cycleWorld: World;
-let cycleQueryA: Query;
-let cycleQueryB: Query;
+let cycleQueryA: Query<any>;
+let cycleQueryB: Query<any>;
 
 export function setupEntityCycle(): void {
   cycleWorld = new World();
@@ -288,19 +236,25 @@ export function setupEntityCycle(): void {
     cycleWorld.addComponent(entity, ComponentA, { value: 1 });
   }
 
-  cycleQueryA = cycleWorld.createQuery({ with: [ComponentA] });
-  cycleQueryB = cycleWorld.createQuery({ with: [ComponentB] });
+  // Create and store queries
+  cycleQueryA = cycleWorld.query(ComponentA);
+  cycleQueryB = cycleWorld.query(ComponentB);
 }
 
 export function benchEntityCycle(): void {
   // Iterate through all entities and create 1 entity with B component
-  for (const _entity of cycleQueryA.execute()) {
+  for (const [_entity] of cycleQueryA) {
     const newEntity = cycleWorld.createEntity();
     cycleWorld.addComponent(newEntity, ComponentB, { value: 1 });
   }
 
   // Then iterate through all entities with B component and destroy them
-  for (const entity of cycleQueryB.execute()) {
+  // Collect entities first to avoid modifying during iteration
+  const entitiesToDestroy: any[] = [];
+  for (const [entity] of cycleQueryB) {
+    entitiesToDestroy.push(entity);
+  }
+  for (const entity of entitiesToDestroy) {
     cycleWorld.destroyEntity(entity);
   }
 }
@@ -310,7 +264,7 @@ export function cleanupEntityCycle(): void {
 }
 
 let addRemoveWorld: World;
-let addRemoveQueryA: Query;
+let addRemoveQueryA: Query<any>;
 
 export function setupAddRemove(): void {
   addRemoveWorld = new World();
@@ -321,17 +275,18 @@ export function setupAddRemove(): void {
     addRemoveWorld.addComponent(entity, ComponentA, { value: 1 });
   }
 
-  addRemoveQueryA = addRemoveWorld.createQuery({ with: [ComponentA] });
+  // Create and store query
+  addRemoveQueryA = addRemoveWorld.query(ComponentA);
 }
 
 export function benchAddRemove(): void {
   // Iterate through all entities, adding B component
-  for (const entity of addRemoveQueryA.execute()) {
+  for (const [entity] of addRemoveQueryA) {
     addRemoveWorld.addComponent(entity, ComponentB, { value: 1 });
   }
 
   // Then iterate through all entities again, removing their B component
-  for (const entity of addRemoveQueryA.execute()) {
+  for (const [entity] of addRemoveQueryA) {
     addRemoveWorld.removeComponent(entity, ComponentB);
   }
 }
