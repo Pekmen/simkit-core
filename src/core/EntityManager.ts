@@ -1,20 +1,7 @@
-import { INDEX_BITS, INDEX_MASK, MAX_ENTITY_INDEX } from "./constants.js";
+import { MAX_ENTITY_INDEX } from "./constants.js";
 import type { EntityManagerSnapshot } from "./Serialization.js";
 import { assert } from "./assert.js";
-
-export type EntityId = number & { readonly __brand: "EntityId" };
-
-export function pack(index: number, gen: number): EntityId {
-  return ((gen << INDEX_BITS) | index) as EntityId;
-}
-
-export function getIndex(id: EntityId): number {
-  return id & INDEX_MASK;
-}
-
-export function getGen(id: EntityId): number {
-  return id >>> INDEX_BITS;
-}
+import { type EntityId, pack, getIndex, getGen } from "./EntityId.js";
 
 export class EntityManager {
   private nextIndex = 0;

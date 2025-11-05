@@ -6,15 +6,15 @@ A lightweight, type-safe Entity-Component-System (ECS) library for TypeScript
 
 ## Performance
 
-Latest benchmark results for version 0.8.1 (11/4/2025):
+Latest benchmark results for version 0.8.2 (11/5/2025):
 
 | Benchmark | Operations/sec |
 |-----------|---------------:|
-| Packed Iteration (5 queries) | 13,757 |
-| Simple Iteration | 11,544 |
-| Fragmented Iteration | 28,109 |
-| Entity Cycle | 3,359 |
-| Add/Remove Component | 6,948 |
+| Packed Iteration (5 queries) | 12,109 |
+| Simple Iteration | 10,822 |
+| Fragmented Iteration | 24,244 |
+| Entity Cycle | 4,009 |
+| Add/Remove Component | 6,504 |
 
 ### Benchmark Descriptions
 
@@ -100,16 +100,12 @@ const Velocity = defineComponent<Velocity>("Velocity", { dx: 0, dy: 0 });
 
 // Create a system
 class MovementSystem extends System {
-  private query = this.world.createQuery({ with: [Position, Velocity] });
+  private query = this.world.query(Position, Velocity);
 
   update(deltaTime: number): void {
-    for (const entity of this.query.execute()) {
-      const pos = this.world.getComponent(entity, Position);
-      const vel = this.world.getComponent(entity, Velocity);
-      if (pos && vel) {
-        pos.x += vel.dx * deltaTime;
-        pos.y += vel.dy * deltaTime;
-      }
+    for (const [entity, pos, vel] of this.query) {
+      pos.x += vel.dx * deltaTime;
+      pos.y += vel.dy * deltaTime;
     }
   }
 }
@@ -149,8 +145,8 @@ world.addSystem(system);
 world.update(deltaTime);
 
 // Queries
-const query = world.createQuery({ with: [Position, Velocity] });
-for (const entity of query.execute()) {
+const query = world.query(Position, Velocity);
+for (const [entity, pos, vel] of query) {
   /* ... */
 }
 
@@ -176,12 +172,11 @@ world.addComponent(entity, Health, { current: 80 }); // max = 100
 
 ```typescript
 class HealthSystem extends System {
-  private query = this.world.createQuery({ with: [Health] });
+  private query = this.world.query(Health);
 
   update(deltaTime: number): void {
-    for (const entity of this.query.execute()) {
-      const health = this.world.getComponent(entity, Health);
-      if (health && health.current <= 0) {
+    for (const [entity, health] of this.query) {
+      if (health.current <= 0) {
         this.world.destroyEntity(entity);
       }
     }

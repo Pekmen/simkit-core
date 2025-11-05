@@ -11,15 +11,21 @@ import {
 } from "../index.js";
 import type { ComponentDataTuple } from "./Query.js";
 import { assert } from "./assert.js";
+import { MapSet } from "./MapSet.js";
+import { QueryRegistry } from "./QueryRegistry.js";
 
 export class World {
   private entityManager = new EntityManager();
   private componentRegistry = new ComponentRegistry();
   private systems: System[] = [];
-  private queries: Query[] = [];
-  private queryIndex = new Map<string, Set<Query>>();
-  private entityComponents = new Map<EntityId, Set<string>>();
+  private entityComponents = new MapSet<EntityId, string>();
   private componentTypes = new Map<string, ComponentType<unknown>>();
+  private queryRegistry = new QueryRegistry();
+
+  registerQuery(query: Query): void {
+    const trackedComponents = query.getTrackedComponents();
+    this.queryRegistry.register(query, trackedComponents);
+  }
 
   createEntity(): EntityId {
     return this.entityManager.createEntity();
@@ -34,18 +40,10 @@ export class World {
           name: componentName,
         } as ComponentType<unknown>);
         storage?.removeComponent(entityId);
+        this.queryRegistry.invalidateForComponent(componentName);
       }
 
-      for (const componentName of componentNames) {
-        const querySet = this.queryIndex.get(componentName);
-        if (querySet) {
-          for (const query of querySet) {
-            query.markDirty();
-          }
-        }
-      }
-
-      this.entityComponents.delete(entityId);
+      this.entityComponents.removeAll(entityId);
     }
 
     this.entityManager.destroyEntity(entityId);
@@ -75,14 +73,10 @@ export class World {
     const storage = this.componentRegistry.getOrCreate(componentType);
     storage.addComponent(entityId, componentType.create(data));
 
-    let components = this.entityComponents.get(entityId);
-    if (!components) {
-      components = new Set();
-      this.entityComponents.set(entityId, components);
-    }
-    components.add(componentType.name);
+    this.entityComponents.add(entityId, componentType.name);
 
-    this.invalidateQueriesForComponent(componentType);
+    this.queryRegistry.invalidateForComponent(componentType.name);
+
     return true;
   }
 
@@ -98,15 +92,8 @@ export class World {
     const removed = storage ? storage.removeComponent(entityId) : false;
 
     if (removed) {
-      const components = this.entityComponents.get(entityId);
-      if (components) {
-        components.delete(componentType.name);
-        if (components.size === 0) {
-          this.entityComponents.delete(entityId);
-        }
-      }
-
-      this.invalidateQueriesForComponent(componentType);
+      this.entityComponents.remove(entityId, componentType.name);
+      this.queryRegistry.invalidateForComponent(componentType.name);
     }
 
     return removed;
@@ -190,75 +177,17 @@ export class World {
     }
   }
 
-  private createQuery(config: QueryConfig): Query {
-    const query = new Query(this, config);
-    this.queries.push(query);
-
-    const trackedTypes: string[] = [];
-    if (config.with) {
-      trackedTypes.push(...config.with.map((c) => c.name));
-    }
-    if (config.without) {
-      trackedTypes.push(...config.without.map((c) => c.name));
-    }
-    if (config.oneOf) {
-      trackedTypes.push(...config.oneOf.map((c) => c.name));
-    }
-
-    for (const componentType of trackedTypes) {
-      let querySet = this.queryIndex.get(componentType);
-      if (!querySet) {
-        querySet = new Set();
-        this.queryIndex.set(componentType, querySet);
-      }
-      querySet.add(query);
-    }
-
-    return query;
-  }
-
   query<const T extends readonly ComponentType<unknown>[]>(
     ...components: T
-  ): Query<ComponentDataTuple<T>> {
-    return this.createQuery({
+  ): Query<T extends readonly [] ? unknown[] : ComponentDataTuple<T>> {
+    if (components.length === 0) {
+      return new Query(this, {});
+    }
+
+    const config: QueryConfig = {
       with: [...components] as ComponentType<unknown>[],
-    }) as Query<ComponentDataTuple<T>>;
-  }
-
-  registerQueryForComponent<T>(
-    query: Query,
-    componentType: ComponentType<T>,
-  ): void {
-    let querySet = this.queryIndex.get(componentType.name);
-    if (!querySet) {
-      querySet = new Set();
-      this.queryIndex.set(componentType.name, querySet);
-    }
-    querySet.add(query);
-  }
-
-  removeQuery(query: Query): boolean {
-    const index = this.queries.indexOf(query);
-    if (index === -1) return false;
-
-    this.queries.splice(index, 1);
-
-    for (const querySet of this.queryIndex.values()) {
-      querySet.delete(query);
-    }
-
-    return true;
-  }
-
-  private invalidateQueriesForComponent<T>(
-    componentType: ComponentType<T>,
-  ): void {
-    const querySet = this.queryIndex.get(componentType.name);
-    if (querySet) {
-      for (const query of querySet) {
-        query.markDirty();
-      }
-    }
+    };
+    return new Query(this, config);
   }
 
   save(): WorldSnapshot {
@@ -307,20 +236,15 @@ export class World {
       storage.deserialize(componentSnapshot);
 
       for (const entityId of componentSnapshot.entities) {
-        let components = this.entityComponents.get(entityId);
-        if (!components) {
-          components = new Set();
-          this.entityComponents.set(entityId, components);
-        }
-        components.add(componentName);
+        this.entityComponents.add(entityId, componentName);
       }
     }
+
+    this.queryRegistry.invalidateAll();
   }
 
   destroy(): void {
     this.clearSystems();
-    this.queries = [];
-    this.queryIndex.clear();
     this.entityComponents.clear();
     this.componentRegistry = new ComponentRegistry();
     this.entityManager = new EntityManager();

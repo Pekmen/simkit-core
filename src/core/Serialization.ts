@@ -1,4 +1,4 @@
-import type { EntityId } from "./Entity.js";
+import type { EntityId } from "./EntityId.js";
 
 export interface EntityManagerSnapshot {
   nextIndex: number;
