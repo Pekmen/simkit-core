@@ -1,5 +1,4 @@
 import {
-  ComponentRegistry,
   ComponentStorage,
   EntityManager,
   Query,
@@ -7,19 +6,16 @@ import {
   type ComponentType,
   type EntityId,
   type QueryConfig,
-  type WorldSnapshot,
 } from "../index.js";
 import type { ComponentDataTuple } from "./Query.js";
-import { assert } from "./assert.js";
-import { MapSet } from "./MapSet.js";
 import { QueryRegistry } from "./QueryRegistry.js";
+import { ComponentManager } from "./ComponentManager.js";
+import { SystemManager } from "./SystemManager.js";
 
 export class World {
   private entityManager = new EntityManager();
-  private componentRegistry = new ComponentRegistry();
-  private systems: System[] = [];
-  private entityComponents = new MapSet<EntityId, string>();
-  private componentTypes = new Map<string, ComponentType<unknown>>();
+  private componentManager = new ComponentManager();
+  private systemManager = new SystemManager();
   private queryRegistry = new QueryRegistry();
 
   registerQuery(query: Query): void {
@@ -27,30 +23,29 @@ export class World {
     this.queryRegistry.register(query, trackedComponents);
   }
 
+  unregisterQuery(query: Query): void {
+    const trackedComponents = query.getTrackedComponents();
+    this.queryRegistry.unregister(query, trackedComponents);
+  }
+
   createEntity(): EntityId {
     return this.entityManager.createEntity();
   }
 
-  destroyEntity(entityId: EntityId): void {
-    const componentNames = this.entityComponents.get(entityId);
+  destroyEntity(entityId: EntityId): boolean {
+    const componentTypes = this.componentManager.removeAllComponents(entityId);
 
-    if (componentNames) {
-      for (const componentName of componentNames) {
-        const storage = this.componentRegistry.get({
-          name: componentName,
-        } as ComponentType<unknown>);
-        storage?.removeComponent(entityId);
-        this.queryRegistry.invalidateForComponent(componentName);
+    if (componentTypes) {
+      for (const componentType of componentTypes) {
+        this.queryRegistry.invalidateForComponent(componentType);
       }
-
-      this.entityComponents.removeAll(entityId);
     }
 
-    this.entityManager.destroyEntity(entityId);
+    return this.entityManager.destroyEntity(entityId);
   }
 
   getAllEntities(): readonly EntityId[] {
-    return this.entityManager.getAllActiveEntities();
+    return this.entityManager.getAllEntities();
   }
 
   getEntityCount(): number {
@@ -66,16 +61,13 @@ export class World {
       return false;
     }
 
-    if (!this.componentTypes.has(componentType.name)) {
-      this.componentTypes.set(componentType.name, componentType);
-    }
+    this.componentManager.addComponent(
+      entityId,
+      componentType,
+      componentType.create(data),
+    );
 
-    const storage = this.componentRegistry.getOrCreate(componentType);
-    storage.addComponent(entityId, componentType.create(data));
-
-    this.entityComponents.add(entityId, componentType.name);
-
-    this.queryRegistry.invalidateForComponent(componentType.name);
+    this.queryRegistry.invalidateForComponent(componentType);
 
     return true;
   }
@@ -88,12 +80,13 @@ export class World {
       return false;
     }
 
-    const storage = this.componentRegistry.get(componentType);
-    const removed = storage ? storage.removeComponent(entityId) : false;
+    const removed = this.componentManager.removeComponent(
+      entityId,
+      componentType,
+    );
 
     if (removed) {
-      this.entityComponents.remove(entityId, componentType.name);
-      this.queryRegistry.invalidateForComponent(componentType.name);
+      this.queryRegistry.invalidateForComponent(componentType);
     }
 
     return removed;
@@ -103,150 +96,78 @@ export class World {
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): T | undefined {
-    return this.componentRegistry.get(componentType)?.getComponent(entityId);
+    return this.componentManager.getComponent(entityId, componentType);
   }
 
   hasComponent<T>(
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): boolean {
-    return (
-      this.componentRegistry.get(componentType)?.hasComponent(entityId) ?? false
-    );
+    return this.componentManager.hasComponent(entityId, componentType);
   }
 
   getEntitiesWithComponent<T>(
     componentType: ComponentType<T>,
   ): readonly EntityId[] | undefined {
-    return this.componentRegistry.get(componentType)?.getAllEntities();
+    return this.componentManager.getEntitiesWithComponent(componentType);
   }
 
   getComponentStorage<T>(
     componentType: ComponentType<T>,
   ): ComponentStorage<T> | undefined {
-    return this.componentRegistry.get(componentType);
+    return this.componentManager.getComponentStorage(componentType);
   }
 
-  addSystem(systemOrClass: System | (new (world: World) => System)): void {
-    const system =
-      typeof systemOrClass === "function"
-        ? new systemOrClass(this)
-        : systemOrClass;
-
-    assert(
-      typeof system.init === "function",
-      "System must have an init method",
-    );
-    assert(
-      typeof system.update === "function",
-      "System must have an update method",
-    );
-    assert(
-      typeof system.cleanup === "function",
-      "System must have a cleanup method",
-    );
-
-    this.systems.push(system);
-    system.init();
+  addSystem<T extends System>(systemClass: new (world: World) => T): T {
+    return this.systemManager.addSystem(this, systemClass);
   }
 
   removeSystem(system: System): boolean {
-    const index = this.systems.indexOf(system);
-    if (index === -1) return false;
-
-    system.cleanup();
-
-    this.systems.splice(index, 1);
-    return true;
+    return this.systemManager.removeSystem(system);
   }
 
   getSystems(): readonly System[] {
-    return this.systems;
+    return this.systemManager.getSystems();
   }
 
   clearSystems(): void {
-    for (const system of this.systems) {
-      system.cleanup();
-    }
-    this.systems = [];
+    this.systemManager.clearSystems();
   }
 
   update(deltaTime: number): void {
-    for (const system of this.systems) {
-      system.update(deltaTime);
-    }
+    this.systemManager.update(deltaTime);
   }
 
   query<const T extends readonly ComponentType<unknown>[]>(
     ...components: T
   ): Query<T extends readonly [] ? unknown[] : ComponentDataTuple<T>> {
-    if (components.length === 0) {
-      return new Query(this, {});
+    let config: QueryConfig = {};
+
+    if (components.length > 0) {
+      config = {
+        with: [...components] as ComponentType<unknown>[],
+      };
     }
 
-    const config: QueryConfig = {
-      with: [...components] as ComponentType<unknown>[],
-    };
-    return new Query(this, config);
-  }
+    const query = new Query<
+      T extends readonly [] ? unknown[] : ComponentDataTuple<T>
+    >(this, config);
 
-  save(): WorldSnapshot {
-    const components: WorldSnapshot["components"] = {};
-
-    for (const [name, storage] of this.componentRegistry.entries()) {
-      components[name] = storage.serialize();
+    if (
+      (config.with?.length ?? 0) > 0 ||
+      (config.without?.length ?? 0) > 0 ||
+      (config.oneOf?.length ?? 0) > 0
+    ) {
+      this.registerQuery(query);
     }
 
-    return {
-      entities: this.entityManager.serialize(),
-      components,
-    };
-  }
-
-  load(
-    snapshot: WorldSnapshot,
-    componentTypes: ComponentType<unknown>[],
-  ): void {
-    assert(Array.isArray(componentTypes), "componentTypes must be an array");
-
-    this.destroy();
-
-    for (const componentType of componentTypes) {
-      assert(
-        typeof componentType.name === "string" && componentType.name.length > 0,
-        "Each componentType must have a valid name property",
-      );
-      this.componentTypes.set(componentType.name, componentType);
-    }
-
-    this.entityManager.deserialize(snapshot.entities);
-
-    for (const [componentName, componentSnapshot] of Object.entries(
-      snapshot.components,
-    )) {
-      const componentType = this.componentTypes.get(componentName);
-
-      if (!componentType) {
-        throw new Error(
-          `Component type '${componentName}' not found. Did you forget to register it?`,
-        );
-      }
-
-      const storage = this.componentRegistry.getOrCreate(componentType);
-      storage.deserialize(componentSnapshot);
-
-      for (const entityId of componentSnapshot.entities) {
-        this.entityComponents.add(entityId, componentName);
-      }
-    }
-
-    this.queryRegistry.invalidateAll();
+    return query;
   }
 
   destroy(): void {
-    this.clearSystems();
-    this.entityComponents.clear();
-    this.componentRegistry = new ComponentRegistry();
+    this.systemManager.clearSystems();
+    this.componentManager.clear();
     this.entityManager = new EntityManager();
+    this.queryRegistry = new QueryRegistry();
   }
 }

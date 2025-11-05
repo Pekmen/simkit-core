@@ -1,6 +1,4 @@
 import { getIndex, type EntityId } from "./EntityId.js";
-import type { ComponentStorageSnapshot } from "./Serialization.js";
-import { assert } from "./assert.js";
 
 export class ComponentStorage<T> {
   private sparse: (number | undefined)[] = [];
@@ -80,49 +78,5 @@ export class ComponentStorage<T> {
 
   size(): number {
     return this.dense.length;
-  }
-
-  serialize(): ComponentStorageSnapshot {
-    return {
-      entities: [...this.entities],
-      data: [...this.dense],
-    };
-  }
-
-  deserialize(snapshot: ComponentStorageSnapshot): void {
-    assert(
-      Array.isArray(snapshot.entities),
-      "snapshot.entities must be an array",
-    );
-    assert(Array.isArray(snapshot.data), "snapshot.data must be an array");
-    assert(
-      snapshot.entities.length === snapshot.data.length,
-      `snapshot.entities and snapshot.data must have same length: entities=${String(snapshot.entities.length)}, data=${String(snapshot.data.length)}`,
-    );
-
-    this.sparse = [];
-    this.dense = [];
-    this.entities = [];
-
-    for (let i = 0; i < snapshot.entities.length; i++) {
-      const entityId = snapshot.entities[i];
-      const component = snapshot.data[i];
-
-      if (entityId !== undefined && component !== undefined) {
-        const entityIndex = getIndex(entityId);
-        assert(
-          entityIndex >= 0,
-          `Entity index must be non-negative: ${String(entityIndex)}`,
-        );
-        this.sparse[entityIndex] = i;
-        this.dense.push(component as T);
-        this.entities.push(entityId);
-      }
-    }
-
-    assert(
-      this.dense.length === this.entities.length,
-      "Dense and entities arrays must have same length after deserialization",
-    );
   }
 }

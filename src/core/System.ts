@@ -1,10 +1,7 @@
 import type { World } from "../index.js";
-import { assert } from "./assert.js";
 
 export abstract class System {
-  constructor(protected world: World) {
-    assert(Boolean(world), "World must be provided to System");
-  }
+  constructor(protected world: World) {}
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   init(): void {}

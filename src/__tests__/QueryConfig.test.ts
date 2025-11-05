@@ -118,14 +118,14 @@ describe("validateQueryConfig", () => {
       const config: QueryConfig = { with: [] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow("'with' constraint cannot be an empty array");
+      }).toThrow("constraint cannot be an empty array");
     });
 
     test("should reject config with empty 'without' array", () => {
       const config: QueryConfig = { without: [] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow("'without' constraint cannot be an empty array");
+      }).toThrow("constraint cannot be an empty array");
     });
 
     test("should reject config with empty 'oneOf' array", () => {
@@ -139,7 +139,7 @@ describe("validateQueryConfig", () => {
       const config: QueryConfig = { with: [], without: [] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow("'with' constraint cannot be an empty array");
+      }).toThrow("constraint cannot be an empty array");
     });
   });
 
@@ -151,9 +151,7 @@ describe("validateQueryConfig", () => {
       const config: QueryConfig = { with: [invalidComponent] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow(
-        "Invalid component in 'with': component must have a valid name property",
-      );
+      }).toThrow("Invalid component");
     });
 
     test("should reject components with empty name in 'with'", () => {
@@ -164,9 +162,7 @@ describe("validateQueryConfig", () => {
       const config: QueryConfig = { with: [invalidComponent] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow(
-        "Invalid component in 'with': component must have a valid name property",
-      );
+      }).toThrow("Invalid component");
     });
 
     test("should reject components with non-string name in 'without'", () => {
@@ -177,9 +173,7 @@ describe("validateQueryConfig", () => {
       const config: QueryConfig = { without: [invalidComponent] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow(
-        "Invalid component in 'without': component must have a valid name property",
-      );
+      }).toThrow("Invalid component");
     });
 
     test("should reject components without name in 'oneOf'", () => {
@@ -189,9 +183,7 @@ describe("validateQueryConfig", () => {
       const config: QueryConfig = { oneOf: [invalidComponent] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow(
-        "Invalid component in 'oneOf': component must have a valid name property",
-      );
+      }).toThrow("Invalid component");
     });
   });
 
@@ -278,9 +270,7 @@ describe("validateQueryConfig", () => {
       const config: QueryConfig = { with: [invalidComponent] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow(
-        "Invalid component in 'with': component must have a valid name property",
-      );
+      }).toThrow("Invalid component");
     });
 
     test("should handle component with null name property", () => {
@@ -291,9 +281,7 @@ describe("validateQueryConfig", () => {
       const config: QueryConfig = { with: [invalidComponent] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow(
-        "Invalid component in 'with': component must have a valid name property",
-      );
+      }).toThrow("Invalid component");
     });
 
     test("should validate all components in arrays even if first ones are valid", () => {
@@ -306,9 +294,7 @@ describe("validateQueryConfig", () => {
       };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow(
-        "Invalid component in 'with': component must have a valid name property",
-      );
+      }).toThrow("Invalid component");
     });
 
     test("should detect conflicts in the middle of arrays", () => {

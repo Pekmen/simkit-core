@@ -6,15 +6,15 @@ A lightweight, type-safe Entity-Component-System (ECS) library for TypeScript
 
 ## Performance
 
-Latest benchmark results for version 0.8.2 (11/5/2025):
+Latest benchmark results for version 0.8.2 (11/6/2025):
 
 | Benchmark | Operations/sec |
 |-----------|---------------:|
-| Packed Iteration (5 queries) | 12,109 |
-| Simple Iteration | 10,822 |
-| Fragmented Iteration | 24,244 |
-| Entity Cycle | 4,009 |
-| Add/Remove Component | 6,504 |
+| Packed Iteration (5 queries) | 13,221 |
+| Simple Iteration | 11,928 |
+| Fragmented Iteration | 28,637 |
+| Entity Cycle | 3,687 |
+| Add/Remove Component | 7,132 |
 
 ### Benchmark Descriptions
 
@@ -150,9 +150,8 @@ for (const [entity, pos, vel] of query) {
   /* ... */
 }
 
-// Serialization
-const snapshot = world.save();
-world.load(snapshot, [Position, Velocity]);
+// (Persistence removed from core) For persistence, implement an external
+// serializer that converts a World's in-memory state to/from a stable format.
 ```
 
 ### defineComponent

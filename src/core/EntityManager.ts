@@ -1,6 +1,4 @@
-import { MAX_ENTITY_INDEX } from "./constants.js";
-import type { EntityManagerSnapshot } from "./Serialization.js";
-import { assert } from "./assert.js";
+import { MAX_ENTITY_INDEX, MAX_GENERATION } from "./constants.js";
 import { type EntityId, pack, getIndex, getGen } from "./EntityId.js";
 
 export class EntityManager {
@@ -8,6 +6,7 @@ export class EntityManager {
   private freeList: EntityId[] = [];
   private activeEntities = new Set<EntityId>();
   private activeEntitiesCache: EntityId[] | null = null;
+  private exhaustedSlots = new Set<number>();
 
   createEntity(): EntityId {
     const recycledId = this.freeList.pop();
@@ -19,12 +18,33 @@ export class EntityManager {
 
     if (this.nextIndex > MAX_ENTITY_INDEX) {
       const maxEntities = String(MAX_ENTITY_INDEX + 1);
+      const activeCount = String(this.activeEntities.size);
       throw new Error(
-        `Maximum entity limit reached (${maxEntities} entities).`,
+        `EntityManager: Cannot create entity. Maximum entity limit of ${maxEntities} entities reached. ` +
+          `Current active entities: ${activeCount}. ` +
+          `Consider destroying unused entities or increasing MAX_ENTITY_INDEX constant.`,
       );
     }
 
-    const id = pack(this.nextIndex++, 0);
+    let index = this.nextIndex;
+    while (this.exhaustedSlots.has(index)) {
+      index++;
+      if (index > MAX_ENTITY_INDEX) {
+        const maxSlots = String(MAX_ENTITY_INDEX + 1);
+        const exhaustedCount = String(this.exhaustedSlots.size);
+        const activeCount = String(this.activeEntities.size);
+        const maxGen = String(MAX_GENERATION);
+        throw new Error(
+          `EntityManager: Cannot create entity. All ${maxSlots} entity slots exhausted. ` +
+            `${exhaustedCount} slots have reached maximum generation (${maxGen}). ` +
+            `Active entities: ${activeCount}. ` +
+            `This indicates excessive entity churn. Consider redesigning to reuse entities or increase generation bits.`,
+        );
+      }
+    }
+
+    this.nextIndex = index + 1;
+    const id = pack(index, 0);
     this.activeEntities.add(id);
     this.activeEntitiesCache = null;
     return id;
@@ -36,8 +56,12 @@ export class EntityManager {
     const index = getIndex(entityId);
     const gen = getGen(entityId);
 
-    const nextId = pack(index, (gen + 1) & 0xff);
-    this.freeList.push(nextId);
+    if (gen >= MAX_GENERATION) {
+      this.exhaustedSlots.add(index);
+    } else {
+      const nextId = pack(index, gen + 1);
+      this.freeList.push(nextId);
+    }
 
     this.activeEntities.delete(entityId);
     this.activeEntitiesCache = null;
@@ -52,33 +76,8 @@ export class EntityManager {
     return this.activeEntities.size;
   }
 
-  getAllActiveEntities(): readonly EntityId[] {
+  getAllEntities(): readonly EntityId[] {
     this.activeEntitiesCache ??= Array.from(this.activeEntities);
     return this.activeEntitiesCache;
-  }
-
-  serialize(): EntityManagerSnapshot {
-    return {
-      nextIndex: this.nextIndex,
-      freeList: [...this.freeList],
-      activeEntities: Array.from(this.activeEntities),
-    };
-  }
-
-  deserialize(snapshot: EntityManagerSnapshot): void {
-    assert(
-      snapshot.nextIndex >= 0 && snapshot.nextIndex <= MAX_ENTITY_INDEX + 1,
-      `Invalid nextIndex in snapshot: ${String(snapshot.nextIndex)}`,
-    );
-    assert(Array.isArray(snapshot.freeList), "freeList must be an array");
-    assert(
-      Array.isArray(snapshot.activeEntities),
-      "activeEntities must be an array",
-    );
-
-    this.nextIndex = snapshot.nextIndex;
-    this.freeList = [...snapshot.freeList];
-    this.activeEntities = new Set(snapshot.activeEntities);
-    this.activeEntitiesCache = null;
   }
 }

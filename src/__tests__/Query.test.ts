@@ -44,7 +44,7 @@ describe("Query", () => {
       expect(() => {
         const query = world.query();
         Array.from(query);
-      }).toThrow("Query must specify at least one constraint");
+      }).toThrow("Cannot iterate query without constraints");
     });
   });
 
@@ -322,7 +322,7 @@ describe("Query", () => {
       expect(() => {
         const query = world.query();
         query.isEmpty();
-      }).toThrow("Query must specify at least one constraint");
+      }).toThrow("Cannot iterate query without constraints");
     });
 
     test("should update correctly after entity changes", () => {
@@ -378,7 +378,7 @@ describe("Query", () => {
       expect(() => {
         const query = world.query();
         query.first();
-      }).toThrow("Query must specify at least one constraint");
+      }).toThrow("Cannot iterate query without constraints");
     });
 
     test("should work with multiple components", () => {
@@ -431,7 +431,7 @@ describe("Query", () => {
       expect(() => {
         const query = world.query();
         query.count();
-      }).toThrow("Query must specify at least one constraint");
+      }).toThrow("Cannot count query without constraints");
     });
 
     test("should update after entities change", () => {
