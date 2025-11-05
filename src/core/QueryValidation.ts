@@ -9,12 +9,17 @@ function validateComponentArray(
   for (const component of components) {
     if (!component.name || typeof component.name !== "string") {
       throw new Error(
-        `Invalid component in '${arrayName}': component must have a valid name property`,
+        `QueryValidation: Invalid component in '${arrayName}' constraint. ` +
+          `Component must have a valid 'name' property (string). ` +
+          `Ensure you're using components created with defineComponent(). ` +
+          `Example: const Position = defineComponent("Position", { x: 0, y: 0 })`,
       );
     }
     if (seen.has(component.name)) {
       throw new Error(
-        `Duplicate component "${component.name}" in '${arrayName}' constraint`,
+        `QueryValidation: Duplicate component "${component.name}" in '${arrayName}' constraint. ` +
+          `Each component can only appear once per constraint type. ` +
+          `Remove the duplicate component from the ${arrayName} array.`,
       );
     }
     seen.add(component.name);
@@ -29,18 +34,24 @@ function checkComponentConflicts(
 ): void {
   if (currentArrayName === "without" && withSet.has(component.name)) {
     throw new Error(
-      `Component "${component.name}" cannot be both required (with) and excluded (without)`,
+      `QueryValidation: Component "${component.name}" cannot be both required (with) and excluded (without). ` +
+        `This creates a logical impossibility - an entity cannot both have and not have the same component. ` +
+        `Remove "${component.name}" from either the 'with' or 'without' constraint.`,
     );
   }
   if (currentArrayName === "oneOf") {
     if (withSet.has(component.name)) {
       throw new Error(
-        `Component "${component.name}" cannot be both required (with) and optional (oneOf)`,
+        `QueryValidation: Component "${component.name}" cannot be both required (with) and optional (oneOf). ` +
+          `If a component is required, it doesn't need to be in oneOf. ` +
+          `Remove "${component.name}" from either the 'with' or 'oneOf' constraint.`,
       );
     }
     if (withoutSet.has(component.name)) {
       throw new Error(
-        `Component "${component.name}" cannot be both excluded (without) and optional (oneOf)`,
+        `QueryValidation: Component "${component.name}" cannot be both excluded (without) and optional (oneOf). ` +
+          `This creates a logical impossibility - an entity cannot be excluded and optionally included. ` +
+          `Remove "${component.name}" from either the 'without' or 'oneOf' constraint.`,
       );
     }
   }
@@ -49,19 +60,25 @@ function checkComponentConflicts(
 export function validateQueryConfig(config: QueryConfig): void {
   if (config.with?.length === 0) {
     throw new Error(
-      "'with' constraint cannot be an empty array. Use undefined instead.",
+      `QueryValidation: 'with' constraint cannot be an empty array. ` +
+        `Either provide components or omit the 'with' property entirely. ` +
+        `Example: { with: [Position, Velocity] } or {}`,
     );
   }
 
   if (config.without?.length === 0) {
     throw new Error(
-      "'without' constraint cannot be an empty array. Use undefined instead.",
+      `QueryValidation: 'without' constraint cannot be an empty array. ` +
+        `Either provide components or omit the 'without' property entirely. ` +
+        `Example: { without: [Dead, Frozen] } or {}`,
     );
   }
 
   if (config.oneOf?.length === 0) {
     throw new Error(
-      "'oneOf' constraint cannot be an empty array. Use undefined instead.",
+      `QueryValidation: 'oneOf' constraint cannot be an empty array. ` +
+        `Either provide components or omit the 'oneOf' property entirely. ` +
+        `Example: { oneOf: [Player, Enemy] } or {}`,
     );
   }
 
@@ -72,7 +89,9 @@ export function validateQueryConfig(config: QueryConfig): void {
 
   if (!hasConstraints) {
     throw new Error(
-      "Query must specify at least one constraint (with, without, or oneOf)",
+      `QueryValidation: Query must specify at least one constraint (with, without, or oneOf). ` +
+        `Empty queries are not allowed. ` +
+        `Example: world.query(Position) or new Query(world, { with: [Position], without: [Dead] })`,
     );
   }
 

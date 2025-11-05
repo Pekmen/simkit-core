@@ -375,14 +375,14 @@ describe("World.query", () => {
       expect(() => {
         const query = world.query();
         Array.from(query);
-      }).toThrow("Query must specify at least one constraint");
+      }).toThrow("Cannot iterate query without constraints");
     });
 
     test("should throw error for config with only empty arrays when iterating", () => {
       expect(() => {
         const query = new Query(world, { with: [], without: [] });
         Array.from(query);
-      }).toThrow("'with' constraint cannot be an empty array");
+      }).toThrow("constraint cannot be an empty array");
     });
 
     test("should throw error for conflicting components when iterating", () => {
@@ -399,7 +399,7 @@ describe("World.query", () => {
       expect(() => {
         const query = world.query(invalidComponent);
         Array.from(query);
-      }).toThrow("component must have a valid name property");
+      }).toThrow("Invalid component");
     });
   });
 

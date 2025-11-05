@@ -84,7 +84,12 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   private *generateResults(): Generator<[EntityId, ...TData]> {
     if (!this.hasAnyConstraints()) {
       throw new Error(
-        "Query must specify at least one constraint (with, without, or oneOf)",
+        `Query: Cannot iterate query without constraints. ` +
+          `Queries must specify at least one constraint: with(), without(), or oneOf(). ` +
+          `Examples:\n` +
+          `  - world.query(Position, Velocity) // entities WITH Position AND Velocity\n` +
+          `  - world.query().with(Position).without(Dead) // WITH Position, WITHOUT Dead\n` +
+          `  - world.query().oneOf(Player, Enemy) // WITH either Player OR Enemy`,
       );
     }
 
@@ -194,7 +199,12 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
 
     if (!this.hasAnyConstraints()) {
       throw new Error(
-        "Query must specify at least one constraint (with, without, or oneOf)",
+        `Query: Cannot count query without constraints. ` +
+          `Queries must specify at least one constraint: with(), without(), or oneOf(). ` +
+          `Examples:\n` +
+          `  - world.query(Position, Velocity).count() // count entities WITH Position AND Velocity\n` +
+          `  - world.query().with(Position).without(Dead).count() // WITH Position, WITHOUT Dead\n` +
+          `  - world.query().oneOf(Player, Enemy).count() // WITH either Player OR Enemy`,
       );
     }
 

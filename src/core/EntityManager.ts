@@ -18,8 +18,11 @@ export class EntityManager {
 
     if (this.nextIndex > MAX_ENTITY_INDEX) {
       const maxEntities = String(MAX_ENTITY_INDEX + 1);
+      const activeCount = String(this.activeEntities.size);
       throw new Error(
-        `Maximum entity limit reached (${maxEntities} entities).`,
+        `EntityManager: Cannot create entity. Maximum entity limit of ${maxEntities} entities reached. ` +
+          `Current active entities: ${activeCount}. ` +
+          `Consider destroying unused entities or increasing MAX_ENTITY_INDEX constant.`,
       );
     }
 
@@ -27,7 +30,16 @@ export class EntityManager {
     while (this.exhaustedSlots.has(index)) {
       index++;
       if (index > MAX_ENTITY_INDEX) {
-        throw new Error(`Maximum entity limit reached (all slots exhausted).`);
+        const maxSlots = String(MAX_ENTITY_INDEX + 1);
+        const exhaustedCount = String(this.exhaustedSlots.size);
+        const activeCount = String(this.activeEntities.size);
+        const maxGen = String(MAX_GENERATION);
+        throw new Error(
+          `EntityManager: Cannot create entity. All ${maxSlots} entity slots exhausted. ` +
+            `${exhaustedCount} slots have reached maximum generation (${maxGen}). ` +
+            `Active entities: ${activeCount}. ` +
+            `This indicates excessive entity churn. Consider redesigning to reuse entities or increase generation bits.`,
+        );
       }
     }
 

@@ -1,6 +1,5 @@
 import type { System } from "./System.js";
 import type { World } from "./World.js";
-import { assert } from "./assert.js";
 
 export class SystemManager {
   private systems: System[] = [];
@@ -10,19 +9,26 @@ export class SystemManager {
     systemClass: new (world: World) => T,
   ): T {
     const system = new systemClass(world);
+    const systemName = systemClass.name || "AnonymousSystem";
 
-    assert(
-      typeof system.init === "function",
-      "System must have an init method",
-    );
-    assert(
-      typeof system.update === "function",
-      "System must have an update method",
-    );
-    assert(
-      typeof system.cleanup === "function",
-      "System must have a cleanup method",
-    );
+    if (typeof system.init !== "function") {
+      throw new Error(
+        `SystemManager: System "${systemName}" is invalid. Missing required init() method. ` +
+          `All systems must extend the System class and implement init(), update(), and cleanup().`,
+      );
+    }
+    if (typeof system.update !== "function") {
+      throw new Error(
+        `SystemManager: System "${systemName}" is invalid. Missing required update() method. ` +
+          `All systems must extend the System class and implement init(), update(), and cleanup().`,
+      );
+    }
+    if (typeof system.cleanup !== "function") {
+      throw new Error(
+        `SystemManager: System "${systemName}" is invalid. Missing required cleanup() method. ` +
+          `All systems must extend the System class and implement init(), update(), and cleanup().`,
+      );
+    }
 
     this.systems.push(system);
     system.init();
