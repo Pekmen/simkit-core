@@ -17,17 +17,32 @@ export type ComponentDataTuple<T extends readonly ComponentType<unknown>[]> = {
 export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   private world: World;
   private config: QueryConfig;
-  private validated = false;
   private cachedResults: [EntityId, ...TData][] | null = null;
   private trackedComponents: Set<ComponentType<unknown>> | null = null;
-  private registered = false;
 
   constructor(world: World, config: QueryConfig = {}) {
     this.world = world;
     this.config = config;
+
+    const hasEmptyArrays =
+      config.with?.length === 0 ||
+      config.without?.length === 0 ||
+      config.oneOf?.length === 0;
+
+    if (this.hasAnyConstraints() || hasEmptyArrays) {
+      validateQueryConfig(this.config);
+    }
   }
 
-  getTrackedComponents(): Set<ComponentType<unknown>> {
+  private hasAnyConstraints(): boolean {
+    return (
+      (this.config.with?.length ?? 0) > 0 ||
+      (this.config.without?.length ?? 0) > 0 ||
+      (this.config.oneOf?.length ?? 0) > 0
+    );
+  }
+
+  getTrackedComponents(): ReadonlySet<ComponentType<unknown>> {
     if (this.trackedComponents !== null) {
       return this.trackedComponents;
     }
@@ -147,14 +162,10 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   }
 
   private *generateResults(): Generator<[EntityId, ...TData]> {
-    if (!this.validated) {
-      validateQueryConfig(this.config);
-      this.validated = true;
-    }
-
-    if (!this.registered) {
-      this.world.registerQuery(this);
-      this.registered = true;
+    if (!this.hasAnyConstraints()) {
+      throw new Error(
+        "Query must specify at least one constraint (with, without, or oneOf)",
+      );
     }
 
     if (this.cachedResults !== null) {
@@ -232,7 +243,9 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         ...components,
       ] as ComponentType<unknown>[],
     };
-    return new Query(this.world, newConfig);
+    const query = new Query<ComponentDataTuple<T>>(this.world, newConfig);
+    this.world.registerQuery(query);
+    return query;
   }
 
   without(...components: readonly ComponentType<unknown>[]): Query<TData> {
@@ -243,7 +256,15 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         ...components,
       ] as ComponentType<unknown>[],
     };
-    return new Query<TData>(this.world, newConfig);
+    const query = new Query<TData>(this.world, newConfig);
+    if (
+      (newConfig.with?.length ?? 0) > 0 ||
+      (newConfig.without?.length ?? 0) > 0 ||
+      (newConfig.oneOf?.length ?? 0) > 0
+    ) {
+      this.world.registerQuery(query);
+    }
+    return query;
   }
 
   oneOf(...components: readonly ComponentType<unknown>[]): Query<TData> {
@@ -254,7 +275,15 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         ...components,
       ] as ComponentType<unknown>[],
     };
-    return new Query<TData>(this.world, newConfig);
+    const query = new Query<TData>(this.world, newConfig);
+    if (
+      (newConfig.with?.length ?? 0) > 0 ||
+      (newConfig.without?.length ?? 0) > 0 ||
+      (newConfig.oneOf?.length ?? 0) > 0
+    ) {
+      this.world.registerQuery(query);
+    }
+    return query;
   }
 
   isEmpty(): boolean {
@@ -266,9 +295,10 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
       return this.cachedResults.length;
     }
 
-    if (!this.validated) {
-      validateQueryConfig(this.config);
-      this.validated = true;
+    if (!this.hasAnyConstraints()) {
+      throw new Error(
+        "Query must specify at least one constraint (with, without, or oneOf)",
+      );
     }
 
     const storages = this.getStorages();
@@ -301,10 +331,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   }
 
   dispose(): void {
-    if (this.registered) {
-      this.world.unregisterQuery(this);
-      this.registered = false;
-      this.cachedResults = null;
-    }
+    this.world.unregisterQuery(this);
+    this.cachedResults = null;
   }
 }

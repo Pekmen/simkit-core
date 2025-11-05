@@ -175,14 +175,27 @@ export class World {
   query<const T extends readonly ComponentType<unknown>[]>(
     ...components: T
   ): Query<T extends readonly [] ? unknown[] : ComponentDataTuple<T>> {
-    if (components.length === 0) {
-      return new Query(this, {});
+    let config: QueryConfig = {};
+
+    if (components.length > 0) {
+      config = {
+        with: [...components] as ComponentType<unknown>[],
+      };
     }
 
-    const config: QueryConfig = {
-      with: [...components] as ComponentType<unknown>[],
-    };
-    return new Query(this, config);
+    const query = new Query<
+      T extends readonly [] ? unknown[] : ComponentDataTuple<T>
+    >(this, config);
+
+    if (
+      (config.with?.length ?? 0) > 0 ||
+      (config.without?.length ?? 0) > 0 ||
+      (config.oneOf?.length ?? 0) > 0
+    ) {
+      this.registerQuery(query);
+    }
+
+    return query;
   }
 
   destroy(): void {
