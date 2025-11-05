@@ -11,13 +11,21 @@ import {
 } from "../index.js";
 import type { ComponentDataTuple } from "./Query.js";
 import { assert } from "./assert.js";
+import { MapSet } from "./MapSet.js";
+import { QueryRegistry } from "./QueryRegistry.js";
 
 export class World {
   private entityManager = new EntityManager();
   private componentRegistry = new ComponentRegistry();
   private systems: System[] = [];
-  private entityComponents = new Map<EntityId, Set<string>>();
+  private entityComponents = new MapSet<EntityId, string>();
   private componentTypes = new Map<string, ComponentType<unknown>>();
+  private queryRegistry = new QueryRegistry();
+
+  registerQuery(query: Query): void {
+    const trackedComponents = query.getTrackedComponents();
+    this.queryRegistry.register(query, trackedComponents);
+  }
 
   createEntity(): EntityId {
     return this.entityManager.createEntity();
@@ -32,9 +40,10 @@ export class World {
           name: componentName,
         } as ComponentType<unknown>);
         storage?.removeComponent(entityId);
+        this.queryRegistry.invalidateForComponent(componentName);
       }
 
-      this.entityComponents.delete(entityId);
+      this.entityComponents.removeAll(entityId);
     }
 
     this.entityManager.destroyEntity(entityId);
@@ -64,12 +73,9 @@ export class World {
     const storage = this.componentRegistry.getOrCreate(componentType);
     storage.addComponent(entityId, componentType.create(data));
 
-    let components = this.entityComponents.get(entityId);
-    if (!components) {
-      components = new Set();
-      this.entityComponents.set(entityId, components);
-    }
-    components.add(componentType.name);
+    this.entityComponents.add(entityId, componentType.name);
+
+    this.queryRegistry.invalidateForComponent(componentType.name);
 
     return true;
   }
@@ -86,13 +92,8 @@ export class World {
     const removed = storage ? storage.removeComponent(entityId) : false;
 
     if (removed) {
-      const components = this.entityComponents.get(entityId);
-      if (components) {
-        components.delete(componentType.name);
-        if (components.size === 0) {
-          this.entityComponents.delete(entityId);
-        }
-      }
+      this.entityComponents.remove(entityId, componentType.name);
+      this.queryRegistry.invalidateForComponent(componentType.name);
     }
 
     return removed;
@@ -235,14 +236,11 @@ export class World {
       storage.deserialize(componentSnapshot);
 
       for (const entityId of componentSnapshot.entities) {
-        let components = this.entityComponents.get(entityId);
-        if (!components) {
-          components = new Set();
-          this.entityComponents.set(entityId, components);
-        }
-        components.add(componentName);
+        this.entityComponents.add(entityId, componentName);
       }
     }
+
+    this.queryRegistry.invalidateAll();
   }
 
   destroy(): void {

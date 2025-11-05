@@ -18,10 +18,50 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   private world: World;
   private config: QueryConfig;
   private validated = false;
+  private cachedResults: [EntityId, ...TData][] | null = null;
+  private trackedComponents: Set<string> | null = null;
+  private registered = false;
 
   constructor(world: World, config: QueryConfig = {}) {
     this.world = world;
     this.config = config;
+  }
+
+  getTrackedComponents(): Set<string> {
+    if (this.trackedComponents !== null) {
+      return this.trackedComponents;
+    }
+
+    const tracked = new Set<string>();
+
+    if (this.config.with) {
+      for (const ct of this.config.with) {
+        tracked.add(ct.name);
+      }
+    }
+
+    if (this.config.without) {
+      for (const ct of this.config.without) {
+        tracked.add(ct.name);
+      }
+    }
+
+    if (this.config.oneOf) {
+      for (const ct of this.config.oneOf) {
+        tracked.add(ct.name);
+      }
+    }
+
+    this.trackedComponents = tracked;
+    return tracked;
+  }
+
+  markDirty(): void {
+    this.cachedResults = null;
+  }
+
+  getCacheSize(): number {
+    return this.cachedResults?.length ?? 0;
   }
 
   private getStorages(): {
@@ -111,6 +151,17 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
       validateQueryConfig(this.config);
       this.validated = true;
     }
+
+    if (!this.registered) {
+      this.world.registerQuery(this);
+      this.registered = true;
+    }
+
+    if (this.cachedResults !== null) {
+      yield* this.cachedResults;
+      return;
+    }
+
     const storages = this.getStorages();
 
     if (
@@ -123,6 +174,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
 
     const entitiesToCheck = this.getOptimalEntitySet();
     const componentTypes = this.config.with ?? [];
+    const results: [EntityId, ...TData][] = [];
 
     for (const entity of entitiesToCheck) {
       if (!this.entityMatchesQuery(entity, storages)) {
@@ -135,8 +187,12 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         tuple.push(this.world.getComponent(entity, componentType));
       }
 
-      yield tuple as [EntityId, ...TData];
+      const typedTuple = tuple as [EntityId, ...TData];
+      results.push(typedTuple);
+      yield typedTuple;
     }
+
+    this.cachedResults = results;
   }
 
   private getOptimalEntitySet(): Iterable<EntityId> {
