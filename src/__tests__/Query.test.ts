@@ -303,4 +303,151 @@ describe("Query", () => {
       expect(result.length).toBe(0);
     });
   });
+
+  describe("isEmpty() method", () => {
+    test("should return true when no entities match", () => {
+      const query = world.query(ComponentA);
+      expect(query.isEmpty()).toBe(true);
+    });
+
+    test("should return false when entities match", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA);
+
+      const query = world.query(ComponentA);
+      expect(query.isEmpty()).toBe(false);
+    });
+
+    test("should throw error for invalid query when checking isEmpty", () => {
+      expect(() => {
+        const query = world.query();
+        query.isEmpty();
+      }).toThrow("Query must specify at least one constraint");
+    });
+
+    test("should update correctly after entity changes", () => {
+      const query = world.query(ComponentA);
+      expect(query.isEmpty()).toBe(true);
+
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA);
+      expect(query.isEmpty()).toBe(false);
+
+      world.destroyEntity(entity);
+      expect(query.isEmpty()).toBe(true);
+    });
+  });
+
+  describe("first() method", () => {
+    test("should return null when no entities match", () => {
+      const query = world.query(ComponentA);
+      expect(query.first()).toBe(null);
+    });
+
+    test("should return first matching entity", () => {
+      const entity1 = world.createEntity();
+      const entity2 = world.createEntity();
+      world.addComponent(entity1, ComponentA, { x: 1, y: 2 });
+      world.addComponent(entity2, ComponentA, { x: 3, y: 4 });
+
+      const query = world.query(ComponentA);
+      const result = query.first();
+
+      expect(result).not.toBe(null);
+      if (result) {
+        expect(result[0]).toBeDefined();
+        expect([entity1, entity2]).toContain(result[0]);
+      }
+    });
+
+    test("should return entity with component data", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA, { x: 10, y: 20 });
+
+      const query = world.query(ComponentA);
+      const result = query.first();
+
+      expect(result).not.toBe(null);
+      if (result) {
+        expect(result[0]).toBe(entity);
+        expect(result[1]).toEqual({ x: 10, y: 20 });
+      }
+    });
+
+    test("should throw error for invalid query when calling first", () => {
+      expect(() => {
+        const query = world.query();
+        query.first();
+      }).toThrow("Query must specify at least one constraint");
+    });
+
+    test("should work with multiple components", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA, { x: 5, y: 10 });
+      world.addComponent(entity, ComponentB, { dx: 1, dy: 2 });
+
+      const query = world.query(ComponentA, ComponentB);
+      const result = query.first();
+
+      expect(result).not.toBe(null);
+      if (result) {
+        expect(result[0]).toBe(entity);
+        expect(result[1]).toEqual({ x: 5, y: 10 });
+        expect(result[2]).toEqual({ dx: 1, dy: 2 });
+      }
+    });
+
+    test("should return null after entity removed", () => {
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA);
+
+      const query = world.query(ComponentA);
+      expect(query.first()).not.toBe(null);
+
+      world.destroyEntity(entity);
+      expect(query.first()).toBe(null);
+    });
+  });
+
+  describe("count() method", () => {
+    test("should return 0 when no entities match", () => {
+      const query = world.query(ComponentA);
+      expect(query.count()).toBe(0);
+    });
+
+    test("should return correct count for matching entities", () => {
+      const entity1 = world.createEntity();
+      const entity2 = world.createEntity();
+      const entity3 = world.createEntity();
+      world.addComponent(entity1, ComponentA);
+      world.addComponent(entity2, ComponentA);
+      world.addComponent(entity3, ComponentB);
+
+      const query = world.query(ComponentA);
+      expect(query.count()).toBe(2);
+    });
+
+    test("should throw error for invalid query when calling count", () => {
+      expect(() => {
+        const query = world.query();
+        query.count();
+      }).toThrow("Query must specify at least one constraint");
+    });
+
+    test("should update after entities change", () => {
+      const query = world.query(ComponentA);
+      expect(query.count()).toBe(0);
+
+      const entity1 = world.createEntity();
+      world.addComponent(entity1, ComponentA);
+      expect(query.count()).toBe(1);
+
+      const entity2 = world.createEntity();
+      world.addComponent(entity2, ComponentA);
+      expect(query.count()).toBe(2);
+
+      world.destroyEntity(entity1);
+      expect(query.count()).toBe(1);
+    });
+  });
 });

@@ -17,6 +17,7 @@ export type ComponentDataTuple<T extends readonly ComponentType<unknown>[]> = {
 export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   private world: World;
   private config: QueryConfig;
+  private validated = false;
 
   constructor(world: World, config: QueryConfig = {}) {
     this.world = world;
@@ -65,8 +66,51 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
     return storages;
   }
 
+  private entityMatchesQuery(
+    entity: EntityId,
+    storages: {
+      with: ComponentStorage<unknown>[];
+      without: ComponentStorage<unknown>[];
+      oneOf: ComponentStorage<unknown>[];
+    },
+  ): boolean {
+    for (const storage of storages.with) {
+      if (!storage.hasComponent(entity)) {
+        return false;
+      }
+    }
+
+    for (const storage of storages.without) {
+      if (storage.hasComponent(entity)) {
+        return false;
+      }
+    }
+
+    if (this.config.oneOf && this.config.oneOf.length > 0) {
+      if (storages.oneOf.length === 0) {
+        return false;
+      }
+
+      let hasOneOf = false;
+      for (const storage of storages.oneOf) {
+        if (storage.hasComponent(entity)) {
+          hasOneOf = true;
+          break;
+        }
+      }
+      if (!hasOneOf) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   private *generateResults(): Generator<[EntityId, ...TData]> {
-    validateQueryConfig(this.config);
+    if (!this.validated) {
+      validateQueryConfig(this.config);
+      this.validated = true;
+    }
     const storages = this.getStorages();
 
     if (
@@ -80,34 +124,9 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
     const entitiesToCheck = this.getOptimalEntitySet();
     const componentTypes = this.config.with ?? [];
 
-    entityLoop: for (const entity of entitiesToCheck) {
-      for (const storage of storages.with) {
-        if (!storage.hasComponent(entity)) {
-          continue entityLoop;
-        }
-      }
-
-      for (const storage of storages.without) {
-        if (storage.hasComponent(entity)) {
-          continue entityLoop;
-        }
-      }
-
-      if (this.config.oneOf && this.config.oneOf.length > 0) {
-        if (storages.oneOf.length === 0) {
-          continue entityLoop;
-        }
-
-        let hasOneOf = false;
-        for (const storage of storages.oneOf) {
-          if (storage.hasComponent(entity)) {
-            hasOneOf = true;
-            break;
-          }
-        }
-        if (!hasOneOf) {
-          continue entityLoop;
-        }
+    for (const entity of entitiesToCheck) {
+      if (!this.entityMatchesQuery(entity, storages)) {
+        continue;
       }
 
       const tuple: [EntityId, ...unknown[]] = [entity];
@@ -187,11 +206,30 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   }
 
   count(): number {
-    let count = 0;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    for (const _ of this) {
-      count++;
+    if (!this.validated) {
+      validateQueryConfig(this.config);
+      this.validated = true;
     }
+
+    const storages = this.getStorages();
+
+    if (
+      this.config.with &&
+      this.config.with.length > 0 &&
+      storages.with.length === 0
+    ) {
+      return 0;
+    }
+
+    const entitiesToCheck = this.getOptimalEntitySet();
+    let count = 0;
+
+    for (const entity of entitiesToCheck) {
+      if (this.entityMatchesQuery(entity, storages)) {
+        count++;
+      }
+    }
+
     return count;
   }
 

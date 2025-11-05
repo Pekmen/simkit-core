@@ -13,12 +13,19 @@ function validateComponentArray(
   components: ComponentType<unknown>[],
   arrayName: string,
 ): void {
+  const seen = new Set<string>();
   for (const component of components) {
     if (!component.name || typeof component.name !== "string") {
       throw new Error(
         `Invalid component in '${arrayName}': component must have a valid name property`,
       );
     }
+    if (seen.has(component.name)) {
+      throw new Error(
+        `Duplicate component "${component.name}" in '${arrayName}' constraint`,
+      );
+    }
+    seen.add(component.name);
   }
 }
 
@@ -48,17 +55,6 @@ function checkComponentConflicts(
 }
 
 export function validateQueryConfig(config: QueryConfig): void {
-  const hasConstraints =
-    (config.with?.length ?? 0) > 0 ||
-    (config.without?.length ?? 0) > 0 ||
-    (config.oneOf?.length ?? 0) > 0;
-
-  if (!hasConstraints) {
-    throw new Error(
-      "Query must specify at least one constraint (with, without, or oneOf)",
-    );
-  }
-
   if (config.with?.length === 0) {
     throw new Error(
       "'with' constraint cannot be an empty array. Use undefined instead.",
@@ -74,6 +70,17 @@ export function validateQueryConfig(config: QueryConfig): void {
   if (config.oneOf?.length === 0) {
     throw new Error(
       "'oneOf' constraint cannot be an empty array. Use undefined instead.",
+    );
+  }
+
+  const hasConstraints =
+    (config.with?.length ?? 0) > 0 ||
+    (config.without?.length ?? 0) > 0 ||
+    (config.oneOf?.length ?? 0) > 0;
+
+  if (!hasConstraints) {
+    throw new Error(
+      "Query must specify at least one constraint (with, without, or oneOf)",
     );
   }
 

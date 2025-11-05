@@ -118,36 +118,28 @@ describe("validateQueryConfig", () => {
       const config: QueryConfig = { with: [] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow(
-        "Query must specify at least one constraint (with, without, or oneOf)",
-      );
+      }).toThrow("'with' constraint cannot be an empty array");
     });
 
     test("should reject config with empty 'without' array", () => {
       const config: QueryConfig = { without: [] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow(
-        "Query must specify at least one constraint (with, without, or oneOf)",
-      );
+      }).toThrow("'without' constraint cannot be an empty array");
     });
 
     test("should reject config with empty 'oneOf' array", () => {
       const config: QueryConfig = { oneOf: [] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow(
-        "Query must specify at least one constraint (with, without, or oneOf)",
-      );
+      }).toThrow("'oneOf' constraint cannot be an empty array");
     });
 
     test("should reject config with multiple empty arrays", () => {
       const config: QueryConfig = { with: [], without: [] };
       expect(() => {
         validateQueryConfig(config);
-      }).toThrow(
-        "Query must specify at least one constraint (with, without, or oneOf)",
-      );
+      }).toThrow("'with' constraint cannot be an empty array");
     });
   });
 
@@ -368,6 +360,64 @@ describe("validateQueryConfig", () => {
       }).toThrow(
         `Component "ComponentA" cannot be both required (with) and excluded (without)`,
       );
+    });
+  });
+
+  describe("duplicate detection", () => {
+    test("should reject duplicate components in 'with' array", () => {
+      const ComponentA = defineComponent("ComponentA", { x: 0 });
+      const config: QueryConfig = { with: [ComponentA, ComponentA] };
+      expect(() => {
+        validateQueryConfig(config);
+      }).toThrow("Duplicate component \"ComponentA\" in 'with' constraint");
+    });
+
+    test("should reject duplicate components in 'without' array", () => {
+      const ComponentA = defineComponent("ComponentA", { x: 0 });
+      const ComponentB = defineComponent("ComponentB", { y: 0 });
+      const config: QueryConfig = {
+        with: [ComponentB],
+        without: [ComponentA, ComponentA],
+      };
+      expect(() => {
+        validateQueryConfig(config);
+      }).toThrow("Duplicate component \"ComponentA\" in 'without' constraint");
+    });
+
+    test("should reject duplicate components in 'oneOf' array", () => {
+      const ComponentA = defineComponent("ComponentA", { x: 0 });
+      const ComponentB = defineComponent("ComponentB", { y: 0 });
+      const config: QueryConfig = {
+        with: [ComponentB],
+        oneOf: [ComponentA, ComponentA],
+      };
+      expect(() => {
+        validateQueryConfig(config);
+      }).toThrow("Duplicate component \"ComponentA\" in 'oneOf' constraint");
+    });
+
+    test("should allow same component in different constraint types (and catch conflict)", () => {
+      const ComponentA = defineComponent("ComponentA", { x: 0 });
+      const config: QueryConfig = {
+        with: [ComponentA],
+        without: [ComponentA],
+      };
+      expect(() => {
+        validateQueryConfig(config);
+      }).toThrow(
+        'Component "ComponentA" cannot be both required (with) and excluded (without)',
+      );
+    });
+
+    test("should reject multiple duplicates in same array", () => {
+      const ComponentA = defineComponent("ComponentA", { x: 0 });
+      const ComponentB = defineComponent("ComponentB", { y: 0 });
+      const config: QueryConfig = {
+        with: [ComponentA, ComponentB, ComponentA, ComponentB],
+      };
+      expect(() => {
+        validateQueryConfig(config);
+      }).toThrow("Duplicate component \"ComponentA\" in 'with' constraint");
     });
   });
 });

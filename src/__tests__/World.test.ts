@@ -390,7 +390,7 @@ describe("World.query", () => {
       expect(() => {
         const query = new Query(world, { with: [], without: [] });
         Array.from(query);
-      }).toThrow("Query must specify at least one constraint");
+      }).toThrow("'with' constraint cannot be an empty array");
     });
 
     test("should throw error for conflicting components when iterating", () => {
