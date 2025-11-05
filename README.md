@@ -10,11 +10,11 @@ Latest benchmark results for version 0.8.2 (11/5/2025):
 
 | Benchmark | Operations/sec |
 |-----------|---------------:|
-| Packed Iteration (5 queries) | 2,972 |
-| Simple Iteration | 1,830 |
-| Fragmented Iteration | 4,669 |
-| Entity Cycle | 2,658 |
-| Add/Remove Component | 3,644 |
+| Packed Iteration (5 queries) | 3,526 |
+| Simple Iteration | 2,865 |
+| Fragmented Iteration | 6,299 |
+| Entity Cycle | 3,417 |
+| Add/Remove Component | 4,624 |
 
 ### Benchmark Descriptions
 
@@ -100,16 +100,12 @@ const Velocity = defineComponent<Velocity>("Velocity", { dx: 0, dy: 0 });
 
 // Create a system
 class MovementSystem extends System {
-  private query = this.world.createQuery({ with: [Position, Velocity] });
+  private query = this.world.query(Position, Velocity);
 
   update(deltaTime: number): void {
-    for (const entity of this.query.execute()) {
-      const pos = this.world.getComponent(entity, Position);
-      const vel = this.world.getComponent(entity, Velocity);
-      if (pos && vel) {
-        pos.x += vel.dx * deltaTime;
-        pos.y += vel.dy * deltaTime;
-      }
+    for (const [entity, pos, vel] of this.query) {
+      pos.x += vel.dx * deltaTime;
+      pos.y += vel.dy * deltaTime;
     }
   }
 }
@@ -149,8 +145,8 @@ world.addSystem(system);
 world.update(deltaTime);
 
 // Queries
-const query = world.createQuery({ with: [Position, Velocity] });
-for (const entity of query.execute()) {
+const query = world.query(Position, Velocity);
+for (const [entity, pos, vel] of query) {
   /* ... */
 }
 
@@ -176,12 +172,11 @@ world.addComponent(entity, Health, { current: 80 }); // max = 100
 
 ```typescript
 class HealthSystem extends System {
-  private query = this.world.createQuery({ with: [Health] });
+  private query = this.world.query(Health);
 
   update(deltaTime: number): void {
-    for (const entity of this.query.execute()) {
-      const health = this.world.getComponent(entity, Health);
-      if (health && health.current <= 0) {
+    for (const [entity, health] of this.query) {
+      if (health.current <= 0) {
         this.world.destroyEntity(entity);
       }
     }

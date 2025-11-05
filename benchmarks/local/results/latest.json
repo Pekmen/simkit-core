@@ -1,12 +1,12 @@
 {
   "version": "0.8.2",
-  "timestamp": "2025-11-05T13:41:56.420Z",
+  "timestamp": "2025-11-05T14:46:27.819Z",
   "results": {
-    "packed_5": 2972,
-    "simple_iter": 1830,
-    "frag_iter": 4669,
-    "entity_cycle": 2658,
-    "add_remove": 3644
+    "packed_5": 3526,
+    "simple_iter": 2865,
+    "frag_iter": 6299,
+    "entity_cycle": 3417,
+    "add_remove": 4624
   },
   "node_version": "v22.16.0",
   "os": "linux"

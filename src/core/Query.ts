@@ -1,10 +1,10 @@
 import {
-  validateQueryConfig,
   World,
   type ComponentStorage,
   type ComponentType,
   type EntityId,
   type QueryConfig,
+  validateQueryConfig,
 } from "../index.js";
 
 export type ExtractComponentData<C> =
@@ -18,9 +18,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   private world: World;
   private config: QueryConfig;
 
-  constructor(world: World, config: QueryConfig) {
-    validateQueryConfig(config);
-
+  constructor(world: World, config: QueryConfig = {}) {
     this.world = world;
     this.config = config;
   }
@@ -40,7 +38,6 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
       for (const ct of this.config.with) {
         const storage = this.world.getComponentStorage(ct);
         if (!storage) {
-          // Missing storage means no entities can match
           return { with: [], without: [], oneOf: [] };
         }
         storages.with.push(storage);
@@ -69,9 +66,9 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   }
 
   private *generateResults(): Generator<[EntityId, ...TData]> {
+    validateQueryConfig(this.config);
     const storages = this.getStorages();
 
-    // Early exit if we have 'with' constraints but no storages
     if (
       this.config.with &&
       this.config.with.length > 0 &&
@@ -84,21 +81,18 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
     const componentTypes = this.config.with ?? [];
 
     entityLoop: for (const entity of entitiesToCheck) {
-      // Check 'with' constraints
       for (const storage of storages.with) {
         if (!storage.hasComponent(entity)) {
           continue entityLoop;
         }
       }
 
-      // Check 'without' constraints
       for (const storage of storages.without) {
         if (storage.hasComponent(entity)) {
           continue entityLoop;
         }
       }
 
-      // Check 'oneOf' constraints
       if (this.config.oneOf && this.config.oneOf.length > 0) {
         if (storages.oneOf.length === 0) {
           continue entityLoop;
@@ -116,7 +110,6 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         }
       }
 
-      // Build tuple with entity and component data
       const tuple: [EntityId, ...unknown[]] = [entity];
 
       for (const componentType of componentTypes) {
@@ -154,22 +147,39 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
     return this.generateResults();
   }
 
-  without(...components: readonly ComponentType<unknown>[]): this {
-    this.config.without = [
-      ...(this.config.without ?? []),
-      ...components,
-    ] as ComponentType<unknown>[];
+  with<const T extends readonly ComponentType<unknown>[]>(
+    ...components: T
+  ): Query<ComponentDataTuple<T>> {
+    const newConfig: QueryConfig = {
+      ...this.config,
+      with: [
+        ...(this.config.with ?? []),
+        ...components,
+      ] as ComponentType<unknown>[],
+    };
+    return new Query(this.world, newConfig);
+  }
 
-    return this;
+  without(...components: readonly ComponentType<unknown>[]): this {
+    const newConfig: QueryConfig = {
+      ...this.config,
+      without: [
+        ...(this.config.without ?? []),
+        ...components,
+      ] as ComponentType<unknown>[],
+    };
+    return new Query(this.world, newConfig) as this;
   }
 
   oneOf(...components: readonly ComponentType<unknown>[]): this {
-    this.config.oneOf = [
-      ...(this.config.oneOf ?? []),
-      ...components,
-    ] as ComponentType<unknown>[];
-
-    return this;
+    const newConfig: QueryConfig = {
+      ...this.config,
+      oneOf: [
+        ...(this.config.oneOf ?? []),
+        ...components,
+      ] as ComponentType<unknown>[],
+    };
+    return new Query(this.world, newConfig) as this;
   }
 
   isEmpty(): boolean {
