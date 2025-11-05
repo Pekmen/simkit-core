@@ -16,8 +16,6 @@ export class World {
   private entityManager = new EntityManager();
   private componentRegistry = new ComponentRegistry();
   private systems: System[] = [];
-  private queries: Query[] = [];
-  private queryIndex = new Map<string, Set<Query>>();
   private entityComponents = new Map<EntityId, Set<string>>();
   private componentTypes = new Map<string, ComponentType<unknown>>();
 
@@ -34,15 +32,6 @@ export class World {
           name: componentName,
         } as ComponentType<unknown>);
         storage?.removeComponent(entityId);
-      }
-
-      for (const componentName of componentNames) {
-        const querySet = this.queryIndex.get(componentName);
-        if (querySet) {
-          for (const query of querySet) {
-            query.markDirty();
-          }
-        }
       }
 
       this.entityComponents.delete(entityId);
@@ -82,7 +71,6 @@ export class World {
     }
     components.add(componentType.name);
 
-    this.invalidateQueriesForComponent(componentType);
     return true;
   }
 
@@ -105,8 +93,6 @@ export class World {
           this.entityComponents.delete(entityId);
         }
       }
-
-      this.invalidateQueriesForComponent(componentType);
     }
 
     return removed;
@@ -191,30 +177,7 @@ export class World {
   }
 
   private createQuery(config: QueryConfig): Query {
-    const query = new Query(this, config);
-    this.queries.push(query);
-
-    const trackedTypes: string[] = [];
-    if (config.with) {
-      trackedTypes.push(...config.with.map((c) => c.name));
-    }
-    if (config.without) {
-      trackedTypes.push(...config.without.map((c) => c.name));
-    }
-    if (config.oneOf) {
-      trackedTypes.push(...config.oneOf.map((c) => c.name));
-    }
-
-    for (const componentType of trackedTypes) {
-      let querySet = this.queryIndex.get(componentType);
-      if (!querySet) {
-        querySet = new Set();
-        this.queryIndex.set(componentType, querySet);
-      }
-      querySet.add(query);
-    }
-
-    return query;
+    return new Query(this, config);
   }
 
   query<const T extends readonly ComponentType<unknown>[]>(
@@ -223,42 +186,6 @@ export class World {
     return this.createQuery({
       with: [...components] as ComponentType<unknown>[],
     }) as Query<ComponentDataTuple<T>>;
-  }
-
-  registerQueryForComponent<T>(
-    query: Query,
-    componentType: ComponentType<T>,
-  ): void {
-    let querySet = this.queryIndex.get(componentType.name);
-    if (!querySet) {
-      querySet = new Set();
-      this.queryIndex.set(componentType.name, querySet);
-    }
-    querySet.add(query);
-  }
-
-  removeQuery(query: Query): boolean {
-    const index = this.queries.indexOf(query);
-    if (index === -1) return false;
-
-    this.queries.splice(index, 1);
-
-    for (const querySet of this.queryIndex.values()) {
-      querySet.delete(query);
-    }
-
-    return true;
-  }
-
-  private invalidateQueriesForComponent<T>(
-    componentType: ComponentType<T>,
-  ): void {
-    const querySet = this.queryIndex.get(componentType.name);
-    if (querySet) {
-      for (const query of querySet) {
-        query.markDirty();
-      }
-    }
   }
 
   save(): WorldSnapshot {
@@ -319,8 +246,6 @@ export class World {
 
   destroy(): void {
     this.clearSystems();
-    this.queries = [];
-    this.queryIndex.clear();
     this.entityComponents.clear();
     this.componentRegistry = new ComponentRegistry();
     this.entityManager = new EntityManager();

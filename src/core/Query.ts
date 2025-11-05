@@ -17,114 +17,95 @@ export type ComponentDataTuple<T extends readonly ComponentType<unknown>[]> = {
 export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   private world: World;
   private config: QueryConfig;
-  private cachedTuples: [EntityId, ...TData][] | null = null;
-  private trackedComponentTypes: Set<string>;
-  private storageCache: {
-    with: ComponentStorage<unknown>[];
-    without: ComponentStorage<unknown>[];
-    oneOf: ComponentStorage<unknown>[];
-  } | null = null;
 
   constructor(world: World, config: QueryConfig) {
     validateQueryConfig(config);
 
     this.world = world;
     this.config = config;
-
-    this.trackedComponentTypes = new Set<string>();
-
-    if (config.with) {
-      for (const ct of config.with) {
-        this.trackedComponentTypes.add(ct.name);
-      }
-    }
-    if (config.without) {
-      for (const ct of config.without) {
-        this.trackedComponentTypes.add(ct.name);
-      }
-    }
-    if (config.oneOf) {
-      for (const ct of config.oneOf) {
-        this.trackedComponentTypes.add(ct.name);
-      }
-    }
   }
 
-  markDirty(): void {
-    this.cachedTuples = null;
-    this.storageCache = null;
-  }
+  private getStorages(): {
+    with: ComponentStorage<unknown>[];
+    without: ComponentStorage<unknown>[];
+    oneOf: ComponentStorage<unknown>[];
+  } {
+    const storages = {
+      with: [] as ComponentStorage<unknown>[],
+      without: [] as ComponentStorage<unknown>[],
+      oneOf: [] as ComponentStorage<unknown>[],
+    };
 
-  tracksComponent(componentName: string): boolean {
-    return this.trackedComponentTypes.has(componentName);
-  }
-
-  private buildTuples(): [EntityId, ...TData][] {
-    if (!this.storageCache) {
-      this.storageCache = {
-        with: [],
-        without: [],
-        oneOf: [],
-      };
-
-      if (this.config.with) {
-        for (const ct of this.config.with) {
-          const storage = this.world.getComponentStorage(ct);
-          if (!storage) {
-            return [];
-          }
-          this.storageCache.with.push(storage);
+    if (this.config.with) {
+      for (const ct of this.config.with) {
+        const storage = this.world.getComponentStorage(ct);
+        if (!storage) {
+          // Missing storage means no entities can match
+          return { with: [], without: [], oneOf: [] };
         }
+        storages.with.push(storage);
       }
+    }
 
-      if (this.config.without) {
-        for (const ct of this.config.without) {
-          const storage = this.world.getComponentStorage(ct);
-          if (storage) {
-            this.storageCache.without.push(storage);
-          }
-        }
-      }
-
-      if (this.config.oneOf) {
-        for (const ct of this.config.oneOf) {
-          const storage = this.world.getComponentStorage(ct);
-          if (storage) {
-            this.storageCache.oneOf.push(storage);
-          }
+    if (this.config.without) {
+      for (const ct of this.config.without) {
+        const storage = this.world.getComponentStorage(ct);
+        if (storage) {
+          storages.without.push(storage);
         }
       }
     }
 
-    const result: [EntityId, ...TData][] = [];
+    if (this.config.oneOf) {
+      for (const ct of this.config.oneOf) {
+        const storage = this.world.getComponentStorage(ct);
+        if (storage) {
+          storages.oneOf.push(storage);
+        }
+      }
+    }
+
+    return storages;
+  }
+
+  private *generateResults(): Generator<[EntityId, ...TData]> {
+    const storages = this.getStorages();
+
+    // Early exit if we have 'with' constraints but no storages
+    if (
+      this.config.with &&
+      this.config.with.length > 0 &&
+      storages.with.length === 0
+    ) {
+      return;
+    }
+
     const entitiesToCheck = this.getOptimalEntitySet();
     const componentTypes = this.config.with ?? [];
-    const {
-      with: withStorages,
-      without: withoutStorages,
-      oneOf: oneOfStorages,
-    } = this.storageCache;
 
     entityLoop: for (const entity of entitiesToCheck) {
-      for (const storage of withStorages) {
+      // Check 'with' constraints
+      for (const storage of storages.with) {
         if (!storage.hasComponent(entity)) {
           continue entityLoop;
         }
       }
 
-      for (const storage of withoutStorages) {
+      // Check 'without' constraints
+      for (const storage of storages.without) {
         if (storage.hasComponent(entity)) {
           continue entityLoop;
         }
       }
 
+      // Check 'oneOf' constraints
       if (this.config.oneOf && this.config.oneOf.length > 0) {
-        if (oneOfStorages.length === 0) {
+        if (storages.oneOf.length === 0) {
           continue entityLoop;
         }
 
         let hasOneOf = false;
-        for (const storage of oneOfStorages) {
+        for (const storage of storages.oneOf) {
           if (storage.hasComponent(entity)) {
             hasOneOf = true;
             break;
@@ -135,16 +116,15 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         }
       }
 
+      // Build tuple with entity and component data
       const tuple: [EntityId, ...unknown[]] = [entity];
 
       for (const componentType of componentTypes) {
         tuple.push(this.world.getComponent(entity, componentType));
       }
 
-      result.push(tuple as [EntityId, ...TData]);
+      yield tuple as [EntityId, ...TData];
     }
-
-    return result;
   }
 
   private getOptimalEntitySet(): Iterable<EntityId> {
@@ -170,14 +150,8 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
     return smallestSet ?? this.world.getAllEntities();
   }
 
-  *[Symbol.iterator](): Iterator<[EntityId, ...TData]> {
-    if (this.cachedTuples) {
-      yield* this.cachedTuples;
-      return;
-    }
-
-    this.cachedTuples = this.buildTuples();
-    yield* this.cachedTuples;
+  [Symbol.iterator](): Iterator<[EntityId, ...TData]> {
+    return this.generateResults();
   }
 
   without(...components: readonly ComponentType<unknown>[]): this {
@@ -186,12 +160,6 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
       ...components,
     ] as ComponentType<unknown>[];
 
-    for (const ct of components) {
-      this.trackedComponentTypes.add(ct.name);
-      this.world.registerQueryForComponent(this, ct);
-    }
-
-    this.markDirty();
     return this;
   }
 
@@ -201,12 +169,6 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
       ...components,
     ] as ComponentType<unknown>[];
 
-    for (const ct of components) {
-      this.trackedComponentTypes.add(ct.name);
-      this.world.registerQueryForComponent(this, ct);
-    }
-
-    this.markDirty();
     return this;
   }
 
@@ -215,7 +177,12 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   }
 
   count(): number {
-    return Array.from(this).length;
+    let count = 0;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for (const _ of this) {
+      count++;
+    }
+    return count;
   }
 
   first(): [EntityId, ...TData] | null {
