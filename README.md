@@ -10,11 +10,11 @@ Latest benchmark results for version 0.8.2 (11/5/2025):
 
 | Benchmark | Operations/sec |
 |-----------|---------------:|
-| Packed Iteration (5 queries) | 3,929 |
-| Simple Iteration | 2,709 |
-| Fragmented Iteration | 6,600 |
-| Entity Cycle | 3,583 |
-| Add/Remove Component | 4,609 |
+| Packed Iteration (5 queries) | 3,547 |
+| Simple Iteration | 2,410 |
+| Fragmented Iteration | 5,615 |
+| Entity Cycle | 3,037 |
+| Add/Remove Component | 4,194 |
 
 ### Benchmark Descriptions
 

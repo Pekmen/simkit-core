@@ -4,8 +4,8 @@ import {
   type ComponentType,
   type EntityId,
   type QueryConfig,
-  validateQueryConfig,
 } from "../index.js";
+import { validateQueryConfig } from "./QueryValidation.js";
 
 export type ExtractComponentData<C> =
   C extends ComponentType<infer T> ? T : never;
@@ -179,7 +179,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
     return new Query(this.world, newConfig);
   }
 
-  without(...components: readonly ComponentType<unknown>[]): this {
+  without(...components: readonly ComponentType<unknown>[]): Query<TData> {
     const newConfig: QueryConfig = {
       ...this.config,
       without: [
@@ -187,10 +187,10 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         ...components,
       ] as ComponentType<unknown>[],
     };
-    return new Query(this.world, newConfig) as this;
+    return new Query<TData>(this.world, newConfig);
   }
 
-  oneOf(...components: readonly ComponentType<unknown>[]): this {
+  oneOf(...components: readonly ComponentType<unknown>[]): Query<TData> {
     const newConfig: QueryConfig = {
       ...this.config,
       oneOf: [
@@ -198,7 +198,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         ...components,
       ] as ComponentType<unknown>[],
     };
-    return new Query(this.world, newConfig) as this;
+    return new Query<TData>(this.world, newConfig);
   }
 
   isEmpty(): boolean {

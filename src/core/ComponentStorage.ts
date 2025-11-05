@@ -1,4 +1,4 @@
-import { getIndex, type EntityId } from "../index.js";
+import { getIndex, type EntityId } from "./EntityId.js";
 import type { ComponentStorageSnapshot } from "./Serialization.js";
 import { assert } from "./assert.js";
 
