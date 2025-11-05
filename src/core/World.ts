@@ -7,7 +7,6 @@ import {
   type ComponentType,
   type EntityId,
   type QueryConfig,
-  type WorldSnapshot,
 } from "../index.js";
 import type { ComponentDataTuple } from "./Query.js";
 import { assert } from "./assert.js";
@@ -18,8 +17,7 @@ export class World {
   private entityManager = new EntityManager();
   private componentRegistry = new ComponentRegistry();
   private systems: System[] = [];
-  private entityComponents = new MapSet<EntityId, string>();
-  private componentTypes = new Map<string, ComponentType<unknown>>();
+  private entityComponents = new MapSet<EntityId, ComponentType<unknown>>();
   private queryRegistry = new QueryRegistry();
 
   registerQuery(query: Query): void {
@@ -32,15 +30,13 @@ export class World {
   }
 
   destroyEntity(entityId: EntityId): void {
-    const componentNames = this.entityComponents.get(entityId);
+    const componentTypes = this.entityComponents.get(entityId);
 
-    if (componentNames) {
-      for (const componentName of componentNames) {
-        const storage = this.componentRegistry.get({
-          name: componentName,
-        } as ComponentType<unknown>);
+    if (componentTypes) {
+      for (const componentType of componentTypes) {
+        const storage = this.componentRegistry.get(componentType);
         storage?.removeComponent(entityId);
-        this.queryRegistry.invalidateForComponent(componentName);
+        this.queryRegistry.invalidateForComponent(componentType);
       }
 
       this.entityComponents.removeAll(entityId);
@@ -66,16 +62,12 @@ export class World {
       return false;
     }
 
-    if (!this.componentTypes.has(componentType.name)) {
-      this.componentTypes.set(componentType.name, componentType);
-    }
-
     const storage = this.componentRegistry.getOrCreate(componentType);
     storage.addComponent(entityId, componentType.create(data));
 
-    this.entityComponents.add(entityId, componentType.name);
+    this.entityComponents.add(entityId, componentType);
 
-    this.queryRegistry.invalidateForComponent(componentType.name);
+    this.queryRegistry.invalidateForComponent(componentType);
 
     return true;
   }
@@ -92,8 +84,8 @@ export class World {
     const removed = storage ? storage.removeComponent(entityId) : false;
 
     if (removed) {
-      this.entityComponents.remove(entityId, componentType.name);
-      this.queryRegistry.invalidateForComponent(componentType.name);
+      this.entityComponents.remove(entityId, componentType);
+      this.queryRegistry.invalidateForComponent(componentType);
     }
 
     return removed;
@@ -188,59 +180,6 @@ export class World {
       with: [...components] as ComponentType<unknown>[],
     };
     return new Query(this, config);
-  }
-
-  save(): WorldSnapshot {
-    const components: WorldSnapshot["components"] = {};
-
-    for (const [name, storage] of this.componentRegistry.entries()) {
-      components[name] = storage.serialize();
-    }
-
-    return {
-      entities: this.entityManager.serialize(),
-      components,
-    };
-  }
-
-  load(
-    snapshot: WorldSnapshot,
-    componentTypes: ComponentType<unknown>[],
-  ): void {
-    assert(Array.isArray(componentTypes), "componentTypes must be an array");
-
-    this.destroy();
-
-    for (const componentType of componentTypes) {
-      assert(
-        typeof componentType.name === "string" && componentType.name.length > 0,
-        "Each componentType must have a valid name property",
-      );
-      this.componentTypes.set(componentType.name, componentType);
-    }
-
-    this.entityManager.deserialize(snapshot.entities);
-
-    for (const [componentName, componentSnapshot] of Object.entries(
-      snapshot.components,
-    )) {
-      const componentType = this.componentTypes.get(componentName);
-
-      if (!componentType) {
-        throw new Error(
-          `Component type '${componentName}' not found. Did you forget to register it?`,
-        );
-      }
-
-      const storage = this.componentRegistry.getOrCreate(componentType);
-      storage.deserialize(componentSnapshot);
-
-      for (const entityId of componentSnapshot.entities) {
-        this.entityComponents.add(entityId, componentName);
-      }
-    }
-
-    this.queryRegistry.invalidateAll();
   }
 
   destroy(): void {

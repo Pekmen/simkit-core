@@ -19,7 +19,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   private config: QueryConfig;
   private validated = false;
   private cachedResults: [EntityId, ...TData][] | null = null;
-  private trackedComponents: Set<string> | null = null;
+  private trackedComponents: Set<ComponentType<unknown>> | null = null;
   private registered = false;
 
   constructor(world: World, config: QueryConfig = {}) {
@@ -27,28 +27,28 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
     this.config = config;
   }
 
-  getTrackedComponents(): Set<string> {
+  getTrackedComponents(): Set<ComponentType<unknown>> {
     if (this.trackedComponents !== null) {
       return this.trackedComponents;
     }
 
-    const tracked = new Set<string>();
+    const tracked = new Set<ComponentType<unknown>>();
 
     if (this.config.with) {
       for (const ct of this.config.with) {
-        tracked.add(ct.name);
+        tracked.add(ct);
       }
     }
 
     if (this.config.without) {
       for (const ct of this.config.without) {
-        tracked.add(ct.name);
+        tracked.add(ct);
       }
     }
 
     if (this.config.oneOf) {
       for (const ct of this.config.oneOf) {
-        tracked.add(ct.name);
+        tracked.add(ct);
       }
     }
 

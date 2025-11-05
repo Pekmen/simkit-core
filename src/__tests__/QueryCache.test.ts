@@ -217,25 +217,7 @@ describe("Query Cache", () => {
     });
   });
 
-  describe("Cache Invalidation - deserialization", () => {
-    it("should invalidate all caches after load", () => {
-      const e1 = world.createEntity();
-      world.addComponent(e1, Position, { x: 10, y: 20 });
-
-      const query = world.query(Position);
-
-      const results1 = Array.from(query);
-      expect(results1).toHaveLength(1);
-
-      // Save and load
-      const snapshot = world.save();
-      world.load(snapshot, [Position]);
-
-      // Cache should be invalidated after load
-      const results2 = Array.from(query);
-      expect(results2).toHaveLength(1);
-    });
-  });
+  // Serialization removed: cache invalidation after load tests removed
 
   describe("Query Methods with Caching", () => {
     it("should cache count() results", () => {

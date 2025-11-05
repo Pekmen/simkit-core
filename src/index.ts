@@ -10,5 +10,4 @@ export * from "./core/QueryConfig.js";
 export * from "./core/QueryValidation.js";
 export * from "./core/QueryRegistry.js";
 export * from "./core/MapSet.js";
-export * from "./core/Serialization.js";
 export * from "./core/assert.js";

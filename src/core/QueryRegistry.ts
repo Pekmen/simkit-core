@@ -1,17 +1,21 @@
 import type { Query } from "./Query.js";
 import { MapSet } from "./MapSet.js";
+import type { ComponentType } from "../index.js";
 
 export class QueryRegistry {
-  private componentToQueries = new MapSet<string, Query>();
+  private componentToQueries = new MapSet<ComponentType<unknown>, Query>();
 
-  register(query: Query, componentNames: Iterable<string>): void {
-    for (const componentName of componentNames) {
-      this.componentToQueries.add(componentName, query);
+  register(
+    query: Query,
+    componentTypes: Iterable<ComponentType<unknown>>,
+  ): void {
+    for (const componentType of componentTypes) {
+      this.componentToQueries.add(componentType, query);
     }
   }
 
-  invalidateForComponent(componentName: string): void {
-    const queries = this.componentToQueries.get(componentName);
+  invalidateForComponent(componentType: ComponentType<unknown>): void {
+    const queries = this.componentToQueries.get(componentType);
     if (queries) {
       for (const query of queries) {
         query.markDirty();
@@ -36,8 +40,8 @@ export class QueryRegistry {
   }
 
   getQueriesForComponent(
-    componentName: string,
+    componentType: ComponentType<unknown>,
   ): ReadonlySet<Query> | undefined {
-    return this.componentToQueries.get(componentName);
+    return this.componentToQueries.get(componentType);
   }
 }

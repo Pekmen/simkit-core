@@ -10,11 +10,11 @@ Latest benchmark results for version 0.8.2 (11/5/2025):
 
 | Benchmark | Operations/sec |
 |-----------|---------------:|
-| Packed Iteration (5 queries) | 12,109 |
-| Simple Iteration | 10,822 |
-| Fragmented Iteration | 24,244 |
-| Entity Cycle | 4,009 |
-| Add/Remove Component | 6,504 |
+| Packed Iteration (5 queries) | 10,839 |
+| Simple Iteration | 8,994 |
+| Fragmented Iteration | 23,127 |
+| Entity Cycle | 3,533 |
+| Add/Remove Component | 6,802 |
 
 ### Benchmark Descriptions
 
@@ -150,9 +150,8 @@ for (const [entity, pos, vel] of query) {
   /* ... */
 }
 
-// Serialization
-const snapshot = world.save();
-world.load(snapshot, [Position, Velocity]);
+// (Persistence removed from core) For persistence, implement an external
+// serializer that converts a World's in-memory state to/from a stable format.
 ```
 
 ### defineComponent

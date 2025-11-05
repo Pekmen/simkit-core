@@ -1,21 +1,25 @@
 import { ComponentStorage, type ComponentType } from "../index.js";
 
 export class ComponentRegistry {
-  private storages = new Map<string, ComponentStorage<unknown>>();
+  private storages = new Map<
+    ComponentType<unknown>,
+    ComponentStorage<unknown>
+  >();
 
   get<T>(componentType: ComponentType<T>): ComponentStorage<T> | undefined {
-    const storage = this.storages.get(componentType.name);
+    const storage = this.storages.get(componentType as ComponentType<unknown>);
     return storage as ComponentStorage<T> | undefined;
   }
 
   getOrCreate<T>(componentType: ComponentType<T>): ComponentStorage<T> {
-    const existing = this.storages.get(componentType.name);
+    const key = componentType as ComponentType<unknown>;
+    const existing = this.storages.get(key);
     if (existing) {
       return existing as ComponentStorage<T>;
     }
 
     const storage = new ComponentStorage<T>();
-    this.storages.set(componentType.name, storage);
+    this.storages.set(key, storage);
     return storage;
   }
 
@@ -23,7 +27,9 @@ export class ComponentRegistry {
     return this.storages.values();
   }
 
-  entries(): IterableIterator<[string, ComponentStorage<unknown>]> {
+  entries(): IterableIterator<
+    [ComponentType<unknown>, ComponentStorage<unknown>]
+  > {
     return this.storages.entries();
   }
 }
