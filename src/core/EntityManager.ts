@@ -76,7 +76,7 @@ export class EntityManager {
     return this.activeEntities.size;
   }
 
-  getAllActiveEntities(): readonly EntityId[] {
+  getAllEntities(): readonly EntityId[] {
     this.activeEntitiesCache ??= Array.from(this.activeEntities);
     return this.activeEntitiesCache;
   }

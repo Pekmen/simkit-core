@@ -57,8 +57,8 @@ export class MapSet<K, V> {
     return this.map.keys();
   }
 
-  values(): IterableIterator<Set<V>> {
-    return this.map.values();
+  values(): IterableIterator<ReadonlySet<V>> {
+    return this.map.values() as IterableIterator<ReadonlySet<V>>;
   }
 
   entries(): IterableIterator<[K, Set<V>]> {

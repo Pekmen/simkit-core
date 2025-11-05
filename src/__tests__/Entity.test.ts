@@ -24,11 +24,11 @@ describe("EntityManager", () => {
     expect(entity2).toBe(1);
   });
 
-  test("getAllActiveEntities returns all created entities", () => {
+  test("getAllEntities returns all created entities", () => {
     const entity1: EntityId = manager.createEntity();
     const entity2: EntityId = manager.createEntity();
 
-    const active = manager.getAllActiveEntities();
+    const active = manager.getAllEntities();
     expect(active).toContain(entity1);
     expect(active).toContain(entity2);
     expect(active.length).toBe(2);
@@ -41,7 +41,7 @@ describe("EntityManager", () => {
     const result = manager.destroyEntity(entity1);
     expect(result).toBe(true);
 
-    const active = manager.getAllActiveEntities();
+    const active = manager.getAllEntities();
     expect(active).not.toContain(entity1);
     expect(active).toContain(entity2);
     expect(active.length).toBe(1);
@@ -53,7 +53,7 @@ describe("EntityManager", () => {
     const entity3: EntityId = manager.createEntity();
 
     manager.destroyEntity(entity2);
-    const active = manager.getAllActiveEntities();
+    const active = manager.getAllEntities();
     expect(active).toContain(entity1);
     expect(active).not.toContain(entity2);
     expect(active).toContain(entity3);
@@ -67,7 +67,7 @@ describe("EntityManager", () => {
     const result = manager.destroyEntity(fakeEntity);
     expect(result).toBe(false);
 
-    const active = manager.getAllActiveEntities();
+    const active = manager.getAllEntities();
     expect(active).toContain(entity1);
     expect(active.length).toBe(1);
   });

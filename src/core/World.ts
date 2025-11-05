@@ -45,7 +45,7 @@ export class World {
   }
 
   getAllEntities(): readonly EntityId[] {
-    return this.entityManager.getAllActiveEntities();
+    return this.entityManager.getAllEntities();
   }
 
   getEntityCount(): number {
@@ -168,5 +168,6 @@ export class World {
     this.systemManager.clearSystems();
     this.componentManager.clear();
     this.entityManager = new EntityManager();
+    this.queryRegistry = new QueryRegistry();
   }
 }

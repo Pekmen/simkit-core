@@ -117,13 +117,20 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         continue;
       }
 
-      const tuple: [EntityId, ...unknown[]] = [entity];
-
-      for (const componentType of componentTypes) {
-        tuple.push(this.world.getComponent(entity, componentType));
+      const components: unknown[] = [];
+      let missing = false;
+      for (const ct of componentTypes) {
+        const c = this.world.getComponent(entity, ct);
+        if (c === undefined) {
+          missing = true;
+          break;
+        }
+        components.push(c);
       }
 
-      const typedTuple = tuple as [EntityId, ...TData];
+      if (missing) continue;
+
+      const typedTuple = [entity, ...components] as [EntityId, ...TData];
       results.push(typedTuple);
       yield typedTuple;
     }
