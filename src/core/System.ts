@@ -6,11 +6,9 @@ export abstract class System {
     assert(Boolean(world), "World must be provided to System");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  init(): void {}
+  init?(): void;
 
   abstract update(deltaTime: number): void;
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  cleanup(): void {}
+  cleanup?(): void;
 }

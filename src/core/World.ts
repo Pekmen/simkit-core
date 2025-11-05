@@ -133,27 +133,23 @@ export class World {
         : systemOrClass;
 
     assert(
-      typeof system.init === "function",
-      "System must have an init method",
-    );
-    assert(
       typeof system.update === "function",
       "System must have an update method",
     );
-    assert(
-      typeof system.cleanup === "function",
-      "System must have a cleanup method",
-    );
 
     this.systems.push(system);
-    system.init();
+    if (system.init) {
+      system.init();
+    }
   }
 
   removeSystem(system: System): boolean {
     const index = this.systems.indexOf(system);
     if (index === -1) return false;
 
-    system.cleanup();
+    if (system.cleanup) {
+      system.cleanup();
+    }
 
     this.systems.splice(index, 1);
     return true;
@@ -165,7 +161,9 @@ export class World {
 
   clearSystems(): void {
     for (const system of this.systems) {
-      system.cleanup();
+      if (system.cleanup) {
+        system.cleanup();
+      }
     }
     this.systems = [];
   }

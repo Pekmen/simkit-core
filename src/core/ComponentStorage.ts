@@ -36,11 +36,14 @@ export class ComponentStorage<T> {
     const lastDenseIndex = this.dense.length - 1;
 
     if (denseIndex < lastDenseIndex) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.dense[denseIndex] = this.dense[lastDenseIndex]!;
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.entities[denseIndex] = this.entities[lastDenseIndex]!;
-      this.sparse[getIndex(this.entities[denseIndex])] = denseIndex;
+      const lastComponent = this.dense[lastDenseIndex];
+      const lastEntity = this.entities[lastDenseIndex];
+
+      if (lastComponent !== undefined && lastEntity !== undefined) {
+        this.dense[denseIndex] = lastComponent;
+        this.entities[denseIndex] = lastEntity;
+        this.sparse[getIndex(lastEntity)] = denseIndex;
+      }
     }
 
     this.dense.pop();

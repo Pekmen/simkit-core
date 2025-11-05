@@ -146,7 +146,6 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
 
   count(): number {
     let count = 0;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     for (const _ of this) {
       count++;
     }
