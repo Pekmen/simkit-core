@@ -14,6 +14,15 @@ export class QueryRegistry {
     }
   }
 
+  unregister(
+    query: Query,
+    componentTypes: Iterable<ComponentType<unknown>>,
+  ): void {
+    for (const componentType of componentTypes) {
+      this.componentToQueries.remove(componentType, query);
+    }
+  }
+
   invalidateForComponent(componentType: ComponentType<unknown>): void {
     const queries = this.componentToQueries.get(componentType);
     if (queries) {

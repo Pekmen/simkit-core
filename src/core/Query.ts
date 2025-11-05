@@ -262,6 +262,10 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   }
 
   count(): number {
+    if (this.cachedResults !== null) {
+      return this.cachedResults.length;
+    }
+
     if (!this.validated) {
       validateQueryConfig(this.config);
       this.validated = true;
@@ -294,5 +298,13 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
       return result;
     }
     return null;
+  }
+
+  dispose(): void {
+    if (this.registered) {
+      this.world.unregisterQuery(this);
+      this.registered = false;
+      this.cachedResults = null;
+    }
   }
 }

@@ -25,11 +25,16 @@ export class World {
     this.queryRegistry.register(query, trackedComponents);
   }
 
+  unregisterQuery(query: Query): void {
+    const trackedComponents = query.getTrackedComponents();
+    this.queryRegistry.unregister(query, trackedComponents);
+  }
+
   createEntity(): EntityId {
     return this.entityManager.createEntity();
   }
 
-  destroyEntity(entityId: EntityId): void {
+  destroyEntity(entityId: EntityId): boolean {
     const componentTypes = this.entityComponents.get(entityId);
 
     if (componentTypes) {
@@ -42,7 +47,7 @@ export class World {
       this.entityComponents.removeAll(entityId);
     }
 
-    this.entityManager.destroyEntity(entityId);
+    return this.entityManager.destroyEntity(entityId);
   }
 
   getAllEntities(): readonly EntityId[] {
@@ -119,11 +124,8 @@ export class World {
     return this.componentRegistry.get(componentType);
   }
 
-  addSystem(systemOrClass: System | (new (world: World) => System)): void {
-    const system =
-      typeof systemOrClass === "function"
-        ? new systemOrClass(this)
-        : systemOrClass;
+  addSystem<T extends System>(systemClass: new (world: World) => T): T {
+    const system = new systemClass(this);
 
     assert(
       typeof system.init === "function",
@@ -140,6 +142,7 @@ export class World {
 
     this.systems.push(system);
     system.init();
+    return system;
   }
 
   removeSystem(system: System): boolean {
