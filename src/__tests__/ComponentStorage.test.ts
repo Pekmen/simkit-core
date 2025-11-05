@@ -37,23 +37,23 @@ describe("ComponentStorage", () => {
     expect(storage.removeComponent(entity1)).toBe(false);
   });
 
-  test("getAllComponents and getAllEntities work correctly", () => {
+  test("getAllEntities works correctly", () => {
     storage.addComponent(entity1, { foo: "a", count: 1 });
     storage.addComponent(entity2, { foo: "b", count: 2 });
 
-    const allComponents = storage.getAllComponents();
     const allEntities = storage.getAllEntities();
 
-    expect(allComponents).toContainEqual({ foo: "a", count: 1 });
-    expect(allComponents).toContainEqual({ foo: "b", count: 2 });
     expect(allEntities).toContain(entity1);
     expect(allEntities).toContain(entity2);
+    expect(allEntities.length).toBe(2);
   });
 
-  test("size returns correct number of components", () => {
-    expect(storage.size()).toBe(0);
+  test("multiple components can be managed", () => {
     storage.addComponent(entity1, { foo: "x", count: 0 });
     storage.addComponent(entity2, { foo: "y", count: 1 });
-    expect(storage.size()).toBe(2);
+
+    expect(storage.getAllEntities().length).toBe(2);
+    expect(storage.hasComponent(entity1)).toBe(true);
+    expect(storage.hasComponent(entity2)).toBe(true);
   });
 });

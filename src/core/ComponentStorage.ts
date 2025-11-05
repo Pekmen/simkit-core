@@ -35,15 +35,12 @@ export class ComponentStorage<T> {
 
     const lastDenseIndex = this.dense.length - 1;
 
-    if (denseIndex !== lastDenseIndex) {
-      const lastComponent = this.dense[lastDenseIndex];
-      const lastEntity = this.entities[lastDenseIndex];
-
-      if (lastComponent !== undefined && lastEntity !== undefined) {
-        this.dense[denseIndex] = lastComponent;
-        this.entities[denseIndex] = lastEntity;
-        this.sparse[getIndex(lastEntity)] = denseIndex;
-      }
+    if (denseIndex < lastDenseIndex) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      this.dense[denseIndex] = this.dense[lastDenseIndex]!;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      this.entities[denseIndex] = this.entities[lastDenseIndex]!;
+      this.sparse[getIndex(this.entities[denseIndex])] = denseIndex;
     }
 
     this.dense.pop();
@@ -70,16 +67,8 @@ export class ComponentStorage<T> {
     return denseIndex !== undefined && this.entities[denseIndex] === entityId;
   }
 
-  getAllComponents(): readonly T[] {
-    return this.dense;
-  }
-
   getAllEntities(): readonly EntityId[] {
     return this.entities;
-  }
-
-  size(): number {
-    return this.dense.length;
   }
 
   serialize(): ComponentStorageSnapshot {

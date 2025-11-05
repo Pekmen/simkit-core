@@ -26,7 +26,6 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   }
 
   *[Symbol.iterator](): Iterator<[EntityId, ...TData]> {
-    // Get storages once for this iteration
     const withStorages: ComponentStorage<unknown>[] = [];
     const withoutStorages: ComponentStorage<unknown>[] = [];
     const oneOfStorages: ComponentStorage<unknown>[] = [];
@@ -35,7 +34,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
       for (const ct of this.config.with) {
         const storage = this.world.getComponentStorage(ct);
         if (!storage) {
-          return; // No entities can match if required component storage doesn't exist
+          return;
         }
         withStorages.push(storage);
       }
@@ -59,7 +58,6 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
       }
     }
 
-    // Get optimal entity set to iterate
     let entitiesToCheck: Iterable<EntityId>;
     if (!this.config.with || this.config.with.length === 0) {
       entitiesToCheck = this.world.getAllEntities();
@@ -70,7 +68,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
       for (const componentType of this.config.with) {
         const entities = this.world.getEntitiesWithComponent(componentType);
         if (!entities) {
-          return; // No matching entities
+          return;
         }
 
         if (entities.length < smallestSize) {
