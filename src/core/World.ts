@@ -1,5 +1,4 @@
 import {
-  ComponentRegistry,
   ComponentStorage,
   EntityManager,
   Query,
@@ -9,15 +8,14 @@ import {
   type QueryConfig,
 } from "../index.js";
 import type { ComponentDataTuple } from "./Query.js";
-import { assert } from "./assert.js";
-import { MapSet } from "./MapSet.js";
 import { QueryRegistry } from "./QueryRegistry.js";
+import { ComponentManager } from "./ComponentManager.js";
+import { SystemManager } from "./SystemManager.js";
 
 export class World {
   private entityManager = new EntityManager();
-  private componentRegistry = new ComponentRegistry();
-  private systems: System[] = [];
-  private entityComponents = new MapSet<EntityId, ComponentType<unknown>>();
+  private componentManager = new ComponentManager();
+  private systemManager = new SystemManager();
   private queryRegistry = new QueryRegistry();
 
   registerQuery(query: Query): void {
@@ -35,16 +33,12 @@ export class World {
   }
 
   destroyEntity(entityId: EntityId): boolean {
-    const componentTypes = this.entityComponents.get(entityId);
+    const componentTypes = this.componentManager.removeAllComponents(entityId);
 
     if (componentTypes) {
       for (const componentType of componentTypes) {
-        const storage = this.componentRegistry.get(componentType);
-        storage?.removeComponent(entityId);
         this.queryRegistry.invalidateForComponent(componentType);
       }
-
-      this.entityComponents.removeAll(entityId);
     }
 
     return this.entityManager.destroyEntity(entityId);
@@ -67,10 +61,11 @@ export class World {
       return false;
     }
 
-    const storage = this.componentRegistry.getOrCreate(componentType);
-    storage.addComponent(entityId, componentType.create(data));
-
-    this.entityComponents.add(entityId, componentType);
+    this.componentManager.addComponent(
+      entityId,
+      componentType,
+      componentType.create(data),
+    );
 
     this.queryRegistry.invalidateForComponent(componentType);
 
@@ -85,11 +80,12 @@ export class World {
       return false;
     }
 
-    const storage = this.componentRegistry.get(componentType);
-    const removed = storage ? storage.removeComponent(entityId) : false;
+    const removed = this.componentManager.removeComponent(
+      entityId,
+      componentType,
+    );
 
     if (removed) {
-      this.entityComponents.remove(entityId, componentType);
       this.queryRegistry.invalidateForComponent(componentType);
     }
 
@@ -100,76 +96,46 @@ export class World {
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): T | undefined {
-    return this.componentRegistry.get(componentType)?.getComponent(entityId);
+    return this.componentManager.getComponent(entityId, componentType);
   }
 
   hasComponent<T>(
     entityId: EntityId,
     componentType: ComponentType<T>,
   ): boolean {
-    return (
-      this.componentRegistry.get(componentType)?.hasComponent(entityId) ?? false
-    );
+    return this.componentManager.hasComponent(entityId, componentType);
   }
 
   getEntitiesWithComponent<T>(
     componentType: ComponentType<T>,
   ): readonly EntityId[] | undefined {
-    return this.componentRegistry.get(componentType)?.getAllEntities();
+    return this.componentManager.getEntitiesWithComponent(componentType);
   }
 
   getComponentStorage<T>(
     componentType: ComponentType<T>,
   ): ComponentStorage<T> | undefined {
-    return this.componentRegistry.get(componentType);
+    return this.componentManager.getComponentStorage(componentType);
   }
 
   addSystem<T extends System>(systemClass: new (world: World) => T): T {
-    const system = new systemClass(this);
-
-    assert(
-      typeof system.init === "function",
-      "System must have an init method",
-    );
-    assert(
-      typeof system.update === "function",
-      "System must have an update method",
-    );
-    assert(
-      typeof system.cleanup === "function",
-      "System must have a cleanup method",
-    );
-
-    this.systems.push(system);
-    system.init();
-    return system;
+    return this.systemManager.addSystem(this, systemClass);
   }
 
   removeSystem(system: System): boolean {
-    const index = this.systems.indexOf(system);
-    if (index === -1) return false;
-
-    system.cleanup();
-
-    this.systems.splice(index, 1);
-    return true;
+    return this.systemManager.removeSystem(system);
   }
 
   getSystems(): readonly System[] {
-    return this.systems;
+    return this.systemManager.getSystems();
   }
 
   clearSystems(): void {
-    for (const system of this.systems) {
-      system.cleanup();
-    }
-    this.systems = [];
+    this.systemManager.clearSystems();
   }
 
   update(deltaTime: number): void {
-    for (const system of this.systems) {
-      system.update(deltaTime);
-    }
+    this.systemManager.update(deltaTime);
   }
 
   query<const T extends readonly ComponentType<unknown>[]>(
@@ -199,9 +165,8 @@ export class World {
   }
 
   destroy(): void {
-    this.clearSystems();
-    this.entityComponents.clear();
-    this.componentRegistry = new ComponentRegistry();
+    this.systemManager.clearSystems();
+    this.componentManager.clear();
     this.entityManager = new EntityManager();
   }
 }
