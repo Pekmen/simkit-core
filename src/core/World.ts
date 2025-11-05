@@ -190,7 +190,13 @@ export class World {
     }
   }
 
-  private createQuery(config: QueryConfig): Query {
+  query<const T extends readonly ComponentType<unknown>[]>(
+    ...components: T
+  ): Query<ComponentDataTuple<T>> {
+    const config: QueryConfig = {
+      with: [...components] as ComponentType<unknown>[],
+    };
+
     const query = new Query(this, config);
     this.queries.push(query);
 
@@ -214,15 +220,7 @@ export class World {
       querySet.add(query);
     }
 
-    return query;
-  }
-
-  query<const T extends readonly ComponentType<unknown>[]>(
-    ...components: T
-  ): Query<ComponentDataTuple<T>> {
-    return this.createQuery({
-      with: [...components] as ComponentType<unknown>[],
-    }) as Query<ComponentDataTuple<T>>;
+    return query as Query<ComponentDataTuple<T>>;
   }
 
   registerQueryForComponent<T>(

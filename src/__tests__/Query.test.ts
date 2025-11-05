@@ -1,4 +1,4 @@
-import { defineComponent, Query, World, type QueryConfig } from "../index.js";
+import { defineComponent, Query, World } from "../index.js";
 
 interface TestComponentA {
   x: number;
@@ -34,18 +34,15 @@ describe("Query", () => {
     ComponentD = defineComponent("ComponentD", { tag: "default" });
   });
 
-  describe("constructor", () => {
-    test("should create a query with valid config", () => {
-      const config: QueryConfig = { with: [ComponentA] };
-      const query = world.createQuery(config);
+  describe("query creation", () => {
+    test("should create a query with valid components", () => {
+      const query = world.query(ComponentA);
       expect(query).toBeInstanceOf(Query);
     });
 
-    test("should validate config and throw on invalid input", () => {
-      const invalidConfig: QueryConfig = {};
-      expect(() => world.createQuery(invalidConfig)).toThrow(
-        "Query must specify at least one constraint",
-      );
+    test("should create queries with multiple components", () => {
+      const query = world.query(ComponentA, ComponentB);
+      expect(query).toBeInstanceOf(Query);
     });
   });
 
@@ -97,23 +94,21 @@ describe("Query", () => {
     });
   });
 
-  describe("createQuery - without constraint", () => {
+  describe("fluent API - without constraint", () => {
     test("should return entities that don't have excluded components", () => {
       const entity1 = world.createEntity();
       const entity2 = world.createEntity();
-      const entity3 = world.createEntity();
 
       world.addComponent(entity1, ComponentA);
       world.addComponent(entity2, ComponentA);
       world.addComponent(entity2, ComponentB);
 
-      const query = world.createQuery({ without: [ComponentB] });
+      const query = world.query(ComponentA).without(ComponentB);
       const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
       expect(result).not.toContain(entity2);
-      expect(result).toContain(entity3);
-      expect(result.length).toBe(2);
+      expect(result.length).toBe(1);
     });
 
     test("should handle multiple exclusions", () => {
@@ -126,51 +121,54 @@ describe("Query", () => {
       world.addComponent(entity2, ComponentB);
       world.addComponent(entity3, ComponentC);
 
-      const query = world.createQuery({ without: [ComponentB, ComponentC] });
+      const query = world.query(ComponentA).without(ComponentB, ComponentC);
       const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
       expect(result).not.toContain(entity2);
       expect(result).not.toContain(entity3);
-      expect(result).toContain(entity4);
-      expect(result.length).toBe(2);
+      expect(result).not.toContain(entity4);
+      expect(result.length).toBe(1);
     });
   });
 
-  describe("createQuery - oneOf constraint", () => {
+  describe("fluent API - oneOf constraint", () => {
     test("should return entities that have at least one of the specified components", () => {
       const entity1 = world.createEntity();
       const entity2 = world.createEntity();
       const entity3 = world.createEntity();
-      const entity4 = world.createEntity();
 
       world.addComponent(entity1, ComponentA);
       world.addComponent(entity2, ComponentB);
       world.addComponent(entity3, ComponentA);
       world.addComponent(entity3, ComponentB);
 
-      const query = world.createQuery({ oneOf: [ComponentA, ComponentB] });
+      const query = world.query(ComponentA).oneOf(ComponentA, ComponentB);
       const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
-      expect(result).toContain(entity2);
       expect(result).toContain(entity3);
-      expect(result).not.toContain(entity4);
-      expect(result.length).toBe(3);
+      expect(result.length).toBe(2);
     });
 
-    test("should return empty array when no entities have any of the components", () => {
+    test("should work with oneOf without base with constraint", () => {
       const entity1 = world.createEntity();
-      world.addComponent(entity1, ComponentC);
+      const entity2 = world.createEntity();
+      const entity3 = world.createEntity();
 
-      const query = world.createQuery({ oneOf: [ComponentA, ComponentB] });
+      world.addComponent(entity1, ComponentA);
+      world.addComponent(entity2, ComponentB);
+      world.addComponent(entity3, ComponentA);
+      world.addComponent(entity3, ComponentB);
+
+      const query = world.query(ComponentA, ComponentB).oneOf(ComponentC);
       const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toEqual([]);
     });
   });
 
-  describe("createQuery - combined constraints", () => {
+  describe("fluent API - combined constraints", () => {
     test("should handle with + without constraints", () => {
       const entity1 = world.createEntity();
       const entity2 = world.createEntity();
@@ -184,10 +182,7 @@ describe("Query", () => {
 
       world.addComponent(entity3, ComponentB);
 
-      const query = world.createQuery({
-        with: [ComponentA],
-        without: [ComponentB],
-      });
+      const query = world.query(ComponentA).without(ComponentB);
       const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
@@ -209,10 +204,7 @@ describe("Query", () => {
 
       world.addComponent(entity3, ComponentA);
 
-      const query = world.createQuery({
-        with: [ComponentA],
-        oneOf: [ComponentC, ComponentD],
-      });
+      const query = world.query(ComponentA).oneOf(ComponentC, ComponentD);
       const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
@@ -232,17 +224,17 @@ describe("Query", () => {
       world.addComponent(entity3, ComponentA);
       world.addComponent(entity4, ComponentB);
 
-      const query = world.createQuery({
-        without: [ComponentA],
-        oneOf: [ComponentC, ComponentD],
-      });
+      const query = world
+        .query(ComponentC)
+        .without(ComponentA)
+        .oneOf(ComponentC, ComponentD);
       const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
-      expect(result).toContain(entity2);
+      expect(result).not.toContain(entity2);
       expect(result).not.toContain(entity3);
       expect(result).not.toContain(entity4);
-      expect(result.length).toBe(2);
+      expect(result.length).toBe(1);
     });
 
     test("should handle all three constraint types together", () => {
@@ -259,11 +251,10 @@ describe("Query", () => {
 
       world.addComponent(entity3, ComponentA);
 
-      const query = world.createQuery({
-        with: [ComponentA],
-        without: [ComponentB],
-        oneOf: [ComponentC, ComponentD],
-      });
+      const query = world
+        .query(ComponentA)
+        .without(ComponentB)
+        .oneOf(ComponentC, ComponentD);
       const result = Array.from(query).map(([entity]) => entity);
 
       expect(result).toContain(entity1);
@@ -275,7 +266,7 @@ describe("Query", () => {
 
   describe("edge cases", () => {
     test("should work with no entities in world", () => {
-      const query = world.createQuery({ with: [ComponentA] });
+      const query = world.query(ComponentA);
       const result = Array.from(query).map(([entity]) => entity);
       expect(result).toEqual([]);
     });
@@ -287,7 +278,7 @@ describe("Query", () => {
       world.addComponent(entity1, ComponentA);
       world.addComponent(entity2, ComponentA);
 
-      const query = world.createQuery({ with: [ComponentA] });
+      const query = world.query(ComponentA);
       let result = Array.from(query).map(([entity]) => entity);
       expect(result.length).toBe(2);
 
@@ -302,7 +293,7 @@ describe("Query", () => {
       world.addComponent(entity, ComponentA);
       world.addComponent(entity, ComponentB);
 
-      const query = world.createQuery({ with: [ComponentA, ComponentB] });
+      const query = world.query(ComponentA, ComponentB);
       let result = Array.from(query).map(([entity]) => entity);
       expect(result.length).toBe(1);
 

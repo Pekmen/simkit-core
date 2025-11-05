@@ -100,23 +100,19 @@ const Velocity = defineComponent<Velocity>("Velocity", { dx: 0, dy: 0 });
 
 // Create a system
 class MovementSystem extends System {
-  private query = this.world.createQuery({ with: [Position, Velocity] });
+  private query = this.world.query(Position, Velocity);
 
   update(deltaTime: number): void {
-    for (const entity of this.query.execute()) {
-      const pos = this.world.getComponent(entity, Position);
-      const vel = this.world.getComponent(entity, Velocity);
-      if (pos && vel) {
-        pos.x += vel.dx * deltaTime;
-        pos.y += vel.dy * deltaTime;
-      }
+    for (const [entity, pos, vel] of this.query) {
+      pos.x += vel.dx * deltaTime;
+      pos.y += vel.dy * deltaTime;
     }
   }
 }
 
 // Create world and add system
 const world = new World();
-world.addSystem(new MovementSystem(world));
+world.addSystem(MovementSystem);
 
 // Create entity
 const player = world.createEntity();
@@ -145,12 +141,12 @@ world.getComponent(entity, ComponentType);
 world.hasComponent(entity, ComponentType);
 
 // Systems & Updates
-world.addSystem(system);
+world.addSystem(SystemClass); // Automatic world injection
 world.update(deltaTime);
 
 // Queries
-const query = world.createQuery({ with: [Position, Velocity] });
-for (const entity of query.execute()) {
+const query = world.query(Position, Velocity);
+for (const [entity, pos, vel] of query) {
   /* ... */
 }
 
@@ -176,12 +172,11 @@ world.addComponent(entity, Health, { current: 80 }); // max = 100
 
 ```typescript
 class HealthSystem extends System {
-  private query = this.world.createQuery({ with: [Health] });
+  private query = this.world.query(Health);
 
   update(deltaTime: number): void {
-    for (const entity of this.query.execute()) {
-      const health = this.world.getComponent(entity, Health);
-      if (health && health.current <= 0) {
+    for (const [entity, health] of this.query) {
+      if (health.current <= 0) {
         this.world.destroyEntity(entity);
       }
     }

@@ -215,7 +215,8 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
   }
 
   count(): number {
-    return Array.from(this).length;
+    this.cachedTuples ??= this.buildTuples();
+    return this.cachedTuples.length;
   }
 
   first(): [EntityId, ...TData] | null {
