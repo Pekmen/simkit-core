@@ -174,12 +174,21 @@ world.addComponent(entity, Health, { current: 80 }); // max = 100
 class HealthSystem extends System {
   private query = this.world.query(Health);
 
+  // Optional lifecycle hooks
+  init?(): void {
+    // Called when system is added to world
+  }
+
   update(deltaTime: number): void {
     for (const [entity, health] of this.query) {
       if (health.current <= 0) {
         this.world.destroyEntity(entity);
       }
     }
+  }
+
+  cleanup?(): void {
+    // Called when system is removed from world
   }
 }
 ```
