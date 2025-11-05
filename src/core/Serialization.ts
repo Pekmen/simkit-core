@@ -1,17 +1,17 @@
 import type { EntityId } from "./Entity.js";
 
 export interface EntityManagerSnapshot {
-  nextIndex: number;
-  freeList: EntityId[];
-  activeEntities: EntityId[];
+  readonly nextIndex: number;
+  readonly freeList: readonly EntityId[];
+  readonly activeEntities: readonly EntityId[];
 }
 
 export interface ComponentStorageSnapshot {
-  entities: EntityId[];
-  data: unknown[];
+  readonly entities: readonly EntityId[];
+  readonly data: readonly unknown[];
 }
 
 export interface WorldSnapshot {
-  entities: EntityManagerSnapshot;
-  components: Record<string, ComponentStorageSnapshot>;
+  readonly entities: EntityManagerSnapshot;
+  readonly components: Readonly<Record<string, ComponentStorageSnapshot>>;
 }

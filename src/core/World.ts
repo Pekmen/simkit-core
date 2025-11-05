@@ -4,13 +4,13 @@ import {
   EntityManager,
   Query,
   System,
+  type ComponentStorageSnapshot,
   type ComponentType,
   type EntityId,
   type QueryConfig,
   type WorldSnapshot,
 } from "../index.js";
 import type { ComponentDataTuple } from "./Query.js";
-import { assert } from "./assert.js";
 
 export class World {
   private entityManager = new EntityManager();
@@ -126,16 +126,11 @@ export class World {
     return this.componentRegistry.get(componentType);
   }
 
-  addSystem(systemOrClass: System | (new (world: World) => System)): void {
+  addSystem(systemOrClass: System | (new () => System)): void {
     const system =
-      typeof systemOrClass === "function"
-        ? new systemOrClass(this)
-        : systemOrClass;
+      typeof systemOrClass === "function" ? new systemOrClass() : systemOrClass;
 
-    assert(
-      typeof system.update === "function",
-      "System must have an update method",
-    );
+    system.setWorld(this);
 
     this.systems.push(system);
     if (system.init) {
@@ -185,7 +180,7 @@ export class World {
   }
 
   save(): WorldSnapshot {
-    const components: WorldSnapshot["components"] = {};
+    const components: Record<string, ComponentStorageSnapshot> = {};
 
     for (const [name, storage] of this.componentRegistry.entries()) {
       components[name] = storage.serialize();
@@ -198,18 +193,12 @@ export class World {
   }
 
   load(
-    snapshot: WorldSnapshot,
-    componentTypes: ComponentType<unknown>[],
+    snapshot: Readonly<WorldSnapshot>,
+    componentTypes: readonly ComponentType<unknown>[],
   ): void {
-    assert(Array.isArray(componentTypes), "componentTypes must be an array");
-
     this.destroy();
 
     for (const componentType of componentTypes) {
-      assert(
-        typeof componentType.name === "string" && componentType.name.length > 0,
-        "Each componentType must have a valid name property",
-      );
       this.componentTypes.set(componentType.name, componentType);
     }
 

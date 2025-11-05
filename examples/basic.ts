@@ -15,10 +15,13 @@ const Velocity = defineComponent<Velocity>("Velocity", { dx: 0, dy: 0 });
 
 // Create a system
 class MovementSystem extends System {
-  private query = this.world.query(Position, Velocity);
+  init(): void {
+    // Queries can be created in init() once world is available
+  }
 
   update(deltaTime: number): void {
-    for (const [, pos, vel] of this.query) {
+    // Or create queries inline in update() - they're lightweight
+    for (const [, pos, vel] of this.world.query(Position, Velocity)) {
       pos.x += vel.dx * deltaTime;
       pos.y += vel.dy * deltaTime;
     }

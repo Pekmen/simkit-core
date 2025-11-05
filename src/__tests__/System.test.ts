@@ -26,27 +26,28 @@ class TestSystem extends System {
 
 describe("System", () => {
   let world: World;
-  let system: TestSystem;
 
   beforeEach(() => {
     world = new World();
-    system = new TestSystem(world);
   });
 
-  test("should store the world reference", () => {
+  test("should store the world reference after being added to world", () => {
+    world.addSystem(TestSystem);
+    const system = world.getSystems()[0] as TestSystem;
     expect(system.getWorld()).toBe(world);
   });
 
-  test("should not be initialized until added to world", () => {
-    expect(system.isInitialized).toBe(false);
-
+  test("should be initialized when added to world", () => {
     world.addSystem(TestSystem);
-    const addedSystem = world.getSystems()[0] as TestSystem;
-    expect(addedSystem).toBeDefined();
-    expect(addedSystem.isInitialized).toBe(true);
+    const system = world.getSystems()[0] as TestSystem;
+    expect(system).toBeDefined();
+    expect(system.isInitialized).toBe(true);
   });
 
   test("update method should be called correctly", () => {
+    world.addSystem(TestSystem);
+    const system = world.getSystems()[0] as TestSystem;
+
     system.update(16);
     expect(system.updateCalls).toBe(1);
     expect(system.lastDelta).toBe(16);
@@ -84,5 +85,30 @@ describe("System", () => {
 
     world.destroy();
     expect(addedSystem.isCleanedUp).toBe(true);
+  });
+
+  test("should have access to world in init method", () => {
+    let worldAccessible = false;
+
+    class InitTestSystem extends System {
+      init(): void {
+        worldAccessible = Boolean(this.world);
+      }
+
+      update(): void {
+        // Required abstract method
+      }
+    }
+
+    world.addSystem(InitTestSystem);
+    expect(worldAccessible).toBe(true);
+  });
+
+  test("should work with instance creation without passing world", () => {
+    const system = new TestSystem();
+    world.addSystem(system);
+
+    expect(system.getWorld()).toBe(world);
+    expect(system.isInitialized).toBe(true);
   });
 });

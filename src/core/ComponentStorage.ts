@@ -83,11 +83,6 @@ export class ComponentStorage<T> {
 
   deserialize(snapshot: ComponentStorageSnapshot): void {
     assert(
-      Array.isArray(snapshot.entities),
-      "snapshot.entities must be an array",
-    );
-    assert(Array.isArray(snapshot.data), "snapshot.data must be an array");
-    assert(
       snapshot.entities.length === snapshot.data.length,
       `snapshot.entities and snapshot.data must have same length: entities=${String(snapshot.entities.length)}, data=${String(snapshot.data.length)}`,
     );
@@ -102,10 +97,6 @@ export class ComponentStorage<T> {
 
       if (entityId !== undefined && component !== undefined) {
         const entityIndex = getIndex(entityId);
-        assert(
-          entityIndex >= 0,
-          `Entity index must be non-negative: ${String(entityIndex)}`,
-        );
         this.sparse[entityIndex] = i;
         this.dense.push(component as T);
         this.entities.push(entityId);

@@ -83,11 +83,6 @@ export class EntityManager {
       snapshot.nextIndex >= 0 && snapshot.nextIndex <= MAX_ENTITY_INDEX + 1,
       `Invalid nextIndex in snapshot: ${String(snapshot.nextIndex)}`,
     );
-    assert(Array.isArray(snapshot.freeList), "freeList must be an array");
-    assert(
-      Array.isArray(snapshot.activeEntities),
-      "activeEntities must be an array",
-    );
 
     this.nextIndex = snapshot.nextIndex;
     this.freeList = [...snapshot.freeList];
