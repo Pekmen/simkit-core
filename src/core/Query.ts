@@ -75,6 +75,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
 
   markDirty(): void {
     this.cachedResults = null;
+    this.matcher.invalidateCache();
   }
 
   getCacheSize(): number {
@@ -109,7 +110,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
     }
 
     const entitiesToCheck = this.matcher.getOptimalEntitySet();
-    const componentTypes = this.config.with ?? [];
+    const componentStorages = storages.with;
     const results: [EntityId, ...TData][] = [];
 
     for (const entity of entitiesToCheck) {
@@ -117,20 +118,21 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         continue;
       }
 
-      const components: unknown[] = [];
+      const tuple: unknown[] = [entity];
       let missing = false;
-      for (const ct of componentTypes) {
-        const c = this.world.getComponent(entity, ct);
+
+      for (const storage of componentStorages) {
+        const c = storage.getComponent(entity);
         if (c === undefined) {
           missing = true;
           break;
         }
-        components.push(c);
+        tuple.push(c);
       }
 
       if (missing) continue;
 
-      const typedTuple = [entity, ...components] as [EntityId, ...TData];
+      const typedTuple = tuple as [EntityId, ...TData];
       results.push(typedTuple);
       yield typedTuple;
     }

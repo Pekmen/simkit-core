@@ -263,3 +263,121 @@ describe("Add / Remove", () => {
     world.destroy();
   });
 });
+
+describe("Batch Operations - Destroy", () => {
+  bench("batch_destroy_individual", () => {
+    const world = new World();
+    const entities: number[] = [];
+
+    // Create 1,000 entities
+    for (let i = 0; i < 1000; i++) {
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA, { value: 1 });
+      world.addComponent(entity, ComponentB, { value: 1 });
+      entities.push(entity);
+    }
+
+    // Destroy one by one
+    for (const entity of entities) {
+      world.destroyEntity(entity);
+    }
+
+    world.destroy();
+  });
+
+  bench("batch_destroy_bulk", () => {
+    const world = new World();
+    const entities: number[] = [];
+
+    // Create 1,000 entities
+    for (let i = 0; i < 1000; i++) {
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA, { value: 1 });
+      world.addComponent(entity, ComponentB, { value: 1 });
+      entities.push(entity);
+    }
+
+    // Destroy in batch
+    world.destroyEntities(entities);
+
+    world.destroy();
+  });
+});
+
+describe("Batch Operations - Add Component", () => {
+  bench("batch_add_individual", () => {
+    const world = new World();
+    const entities: number[] = [];
+
+    // Create 1,000 entities
+    for (let i = 0; i < 1000; i++) {
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA, { value: 1 });
+      entities.push(entity);
+    }
+
+    // Add ComponentB one by one
+    for (const entity of entities) {
+      world.addComponent(entity, ComponentB, { value: 1 });
+    }
+
+    world.destroy();
+  });
+
+  bench("batch_add_bulk", () => {
+    const world = new World();
+    const entities: number[] = [];
+
+    // Create 1,000 entities
+    for (let i = 0; i < 1000; i++) {
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA, { value: 1 });
+      entities.push(entity);
+    }
+
+    // Add ComponentB in batch
+    world.addComponentToEntities(entities, ComponentB, () => ({ value: 1 }));
+
+    world.destroy();
+  });
+});
+
+describe("Batch Operations - Remove Component", () => {
+  bench("batch_remove_individual", () => {
+    const world = new World();
+    const entities: number[] = [];
+
+    // Create 1,000 entities
+    for (let i = 0; i < 1000; i++) {
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA, { value: 1 });
+      world.addComponent(entity, ComponentB, { value: 1 });
+      entities.push(entity);
+    }
+
+    // Remove ComponentB one by one
+    for (const entity of entities) {
+      world.removeComponent(entity, ComponentB);
+    }
+
+    world.destroy();
+  });
+
+  bench("batch_remove_bulk", () => {
+    const world = new World();
+    const entities: number[] = [];
+
+    // Create 1,000 entities
+    for (let i = 0; i < 1000; i++) {
+      const entity = world.createEntity();
+      world.addComponent(entity, ComponentA, { value: 1 });
+      world.addComponent(entity, ComponentB, { value: 1 });
+      entities.push(entity);
+    }
+
+    // Remove ComponentB in batch
+    world.removeComponentFromEntities(entities, ComponentB);
+
+    world.destroy();
+  });
+});

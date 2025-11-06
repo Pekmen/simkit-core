@@ -44,6 +44,37 @@ export class World {
     return this.entityManager.destroyEntity(entityId);
   }
 
+  destroyEntities(entityIds: readonly EntityId[]): number {
+    const affectedComponents = new Set<ComponentType<unknown>>();
+    let destroyedCount = 0;
+
+    this.queryRegistry.startBatch();
+    try {
+      for (const entityId of entityIds) {
+        const componentTypes =
+          this.componentManager.removeAllComponents(entityId);
+
+        if (componentTypes) {
+          for (const componentType of componentTypes) {
+            affectedComponents.add(componentType);
+          }
+        }
+
+        if (this.entityManager.destroyEntity(entityId)) {
+          destroyedCount++;
+        }
+      }
+
+      for (const componentType of affectedComponents) {
+        this.queryRegistry.invalidateForComponent(componentType);
+      }
+    } finally {
+      this.queryRegistry.endBatch();
+    }
+
+    return destroyedCount;
+  }
+
   getAllEntities(): readonly EntityId[] {
     return this.entityManager.getAllEntities();
   }
@@ -72,6 +103,39 @@ export class World {
     return true;
   }
 
+  addComponentToEntities<T>(
+    entityIds: readonly EntityId[],
+    componentType: ComponentType<T>,
+    dataFn?: (entityId: EntityId) => Partial<T>,
+  ): number {
+    let addedCount = 0;
+
+    this.queryRegistry.startBatch();
+    try {
+      for (const entityId of entityIds) {
+        if (!this.entityManager.isEntityValid(entityId)) {
+          continue;
+        }
+
+        const data = dataFn ? dataFn(entityId) : undefined;
+        this.componentManager.addComponent(
+          entityId,
+          componentType,
+          componentType.create(data),
+        );
+        addedCount++;
+      }
+
+      if (addedCount > 0) {
+        this.queryRegistry.invalidateForComponent(componentType);
+      }
+    } finally {
+      this.queryRegistry.endBatch();
+    }
+
+    return addedCount;
+  }
+
   removeComponent<T>(
     entityId: EntityId,
     componentType: ComponentType<T>,
@@ -90,6 +154,64 @@ export class World {
     }
 
     return removed;
+  }
+
+  removeComponentFromEntities<T>(
+    entityIds: readonly EntityId[],
+    componentType: ComponentType<T>,
+  ): number {
+    let removedCount = 0;
+
+    this.queryRegistry.startBatch();
+    try {
+      for (const entityId of entityIds) {
+        if (!this.entityManager.isEntityValid(entityId)) {
+          continue;
+        }
+
+        if (this.componentManager.removeComponent(entityId, componentType)) {
+          removedCount++;
+        }
+      }
+
+      if (removedCount > 0) {
+        this.queryRegistry.invalidateForComponent(componentType);
+      }
+    } finally {
+      this.queryRegistry.endBatch();
+    }
+
+    return removedCount;
+  }
+
+  removeComponents(
+    entityId: EntityId,
+    componentTypes: readonly ComponentType<unknown>[],
+  ): number {
+    if (!this.entityManager.isEntityValid(entityId)) {
+      return 0;
+    }
+
+    let removedCount = 0;
+    const removedTypes = new Set<ComponentType<unknown>>();
+
+    this.queryRegistry.startBatch();
+    try {
+      for (const componentType of componentTypes) {
+        if (this.componentManager.removeComponent(entityId, componentType)) {
+          removedCount++;
+          removedTypes.add(componentType);
+        }
+      }
+
+      for (const componentType of removedTypes) {
+        this.queryRegistry.invalidateForComponent(componentType);
+      }
+    } finally {
+      this.queryRegistry.endBatch();
+    }
+
+    return removedCount;
   }
 
   getComponent<T>(

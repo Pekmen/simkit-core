@@ -294,3 +294,157 @@ export function benchAddRemove(): void {
 export function cleanupAddRemove(): void {
   addRemoveWorld.destroy();
 }
+
+// Batch Operations Benchmarks
+let batchWorld: World;
+let batchEntities: any[];
+
+export function setupBatchDestroy(): void {
+  batchWorld = new World();
+  batchEntities = [];
+
+  // Create 1,000 entities with components
+  for (let i = 0; i < 1000; i++) {
+    const entity = batchWorld.createEntity();
+    batchWorld.addComponent(entity, ComponentA, { value: 1 });
+    batchWorld.addComponent(entity, ComponentB, { value: 1 });
+    batchEntities.push(entity);
+  }
+}
+
+export function benchBatchDestroyIndividual(): void {
+  const world = new World();
+  const entities: any[] = [];
+
+  // Create entities
+  for (let i = 0; i < 1000; i++) {
+    const entity = world.createEntity();
+    world.addComponent(entity, ComponentA, { value: 1 });
+    world.addComponent(entity, ComponentB, { value: 1 });
+    entities.push(entity);
+  }
+
+  // Destroy one by one
+  for (const entity of entities) {
+    world.destroyEntity(entity);
+  }
+}
+
+export function benchBatchDestroyBulk(): void {
+  const world = new World();
+  const entities: any[] = [];
+
+  // Create entities
+  for (let i = 0; i < 1000; i++) {
+    const entity = world.createEntity();
+    world.addComponent(entity, ComponentA, { value: 1 });
+    world.addComponent(entity, ComponentB, { value: 1 });
+    entities.push(entity);
+  }
+
+  // Destroy in batch
+  world.destroyEntities(entities);
+}
+
+export function cleanupBatchDestroy(): void {
+  batchWorld.destroy();
+}
+
+export function setupBatchAddComponent(): void {
+  batchWorld = new World();
+  batchEntities = [];
+
+  // Create 1,000 entities with ComponentA
+  for (let i = 0; i < 1000; i++) {
+    const entity = batchWorld.createEntity();
+    batchWorld.addComponent(entity, ComponentA, { value: 1 });
+    batchEntities.push(entity);
+  }
+}
+
+export function benchBatchAddComponentIndividual(): void {
+  const world = new World();
+  const entities: any[] = [];
+
+  // Create entities
+  for (let i = 0; i < 1000; i++) {
+    const entity = world.createEntity();
+    world.addComponent(entity, ComponentA, { value: 1 });
+    entities.push(entity);
+  }
+
+  // Add ComponentB one by one
+  for (const entity of entities) {
+    world.addComponent(entity, ComponentB, { value: 1 });
+  }
+}
+
+export function benchBatchAddComponentBulk(): void {
+  const world = new World();
+  const entities: any[] = [];
+
+  // Create entities
+  for (let i = 0; i < 1000; i++) {
+    const entity = world.createEntity();
+    world.addComponent(entity, ComponentA, { value: 1 });
+    entities.push(entity);
+  }
+
+  // Add ComponentB in batch
+  world.addComponentToEntities(entities, ComponentB, () => ({ value: 1 }));
+}
+
+export function cleanupBatchAddComponent(): void {
+  batchWorld.destroy();
+}
+
+export function setupBatchRemoveComponent(): void {
+  batchWorld = new World();
+  batchEntities = [];
+
+  // Create 1,000 entities with ComponentA and ComponentB
+  for (let i = 0; i < 1000; i++) {
+    const entity = batchWorld.createEntity();
+    batchWorld.addComponent(entity, ComponentA, { value: 1 });
+    batchWorld.addComponent(entity, ComponentB, { value: 1 });
+    batchEntities.push(entity);
+  }
+}
+
+export function benchBatchRemoveComponentIndividual(): void {
+  const world = new World();
+  const entities: any[] = [];
+
+  // Create entities
+  for (let i = 0; i < 1000; i++) {
+    const entity = world.createEntity();
+    world.addComponent(entity, ComponentA, { value: 1 });
+    world.addComponent(entity, ComponentB, { value: 1 });
+    entities.push(entity);
+  }
+
+  // Remove ComponentB one by one
+  for (const entity of entities) {
+    world.removeComponent(entity, ComponentB);
+  }
+}
+
+export function benchBatchRemoveComponentBulk(): void {
+  const world = new World();
+  const entities: any[] = [];
+
+  // Create entities
+  for (let i = 0; i < 1000; i++) {
+    const entity = world.createEntity();
+    world.addComponent(entity, ComponentA, { value: 1 });
+    world.addComponent(entity, ComponentB, { value: 1 });
+    entities.push(entity);
+  }
+
+  // Remove ComponentB in batch
+  world.removeComponentFromEntities(entities, ComponentB);
+}
+
+export function cleanupBatchRemoveComponent(): void {
+  batchWorld.destroy();
+}

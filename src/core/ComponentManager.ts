@@ -38,15 +38,19 @@ export class ComponentManager {
     const componentTypes = this.entityComponents.get(entityId);
 
     if (componentTypes) {
-      for (const componentType of componentTypes) {
+      const componentTypesCopy = new Set(componentTypes);
+
+      for (const componentType of componentTypesCopy) {
         const storage = this.componentRegistry.get(componentType);
         storage?.removeComponent(entityId);
       }
 
       this.entityComponents.removeAll(entityId);
+
+      return componentTypesCopy;
     }
 
-    return componentTypes;
+    return undefined;
   }
 
   getComponent<T>(
