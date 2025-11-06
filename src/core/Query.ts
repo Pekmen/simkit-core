@@ -6,6 +6,8 @@ import {
 } from "../index.js";
 import { validateQueryConfig } from "./QueryValidation.js";
 import { QueryMatcher } from "./QueryMatcher.js";
+import { assert } from "./assert.js";
+import type { ComponentStorage } from "./ComponentStorage.js";
 
 export type ExtractComponentData<C> =
   C extends ComponentType<infer T> ? T : never;
@@ -118,26 +120,38 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         continue;
       }
 
-      const tuple: unknown[] = [entity];
-      let missing = false;
-
-      for (const storage of componentStorages) {
-        const c = storage.getComponent(entity);
-        if (c === undefined) {
-          missing = true;
-          break;
-        }
-        tuple.push(c);
+      const tuple = this.buildTupleForEntity(entity, componentStorages);
+      if (tuple !== null) {
+        results.push(tuple);
+        yield tuple;
       }
-
-      if (missing) continue;
-
-      const typedTuple = tuple as [EntityId, ...TData];
-      results.push(typedTuple);
-      yield typedTuple;
     }
 
     this.cachedResults = results;
+  }
+
+  private buildTupleForEntity(
+    entity: EntityId,
+    storages: readonly ComponentStorage<unknown>[],
+  ): [EntityId, ...TData] | null {
+    const components: unknown[] = [];
+
+    for (const storage of storages) {
+      const component = storage.getComponent(entity);
+      if (component === undefined) {
+        return null;
+      }
+      components.push(component);
+    }
+
+    const tuple = [entity, ...components];
+
+    assert(
+      tuple.length === 1 + storages.length,
+      `Query: Tuple length mismatch. Expected ${String(1 + storages.length)} (1 entity + ${String(storages.length)} components), got ${String(tuple.length)}`,
+    );
+
+    return tuple as [EntityId, ...TData];
   }
 
   [Symbol.iterator](): Iterator<[EntityId, ...TData]> {
@@ -146,7 +160,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
 
   with<const T extends readonly ComponentType<unknown>[]>(
     ...components: T
-  ): Query<ComponentDataTuple<T>> {
+  ): Query<[...TData, ...ComponentDataTuple<T>]> {
     const newConfig: QueryConfig = {
       ...this.config,
       with: [
@@ -154,7 +168,10 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
         ...components,
       ] as ComponentType<unknown>[],
     };
-    const query = new Query<ComponentDataTuple<T>>(this.world, newConfig);
+    const query = new Query<[...TData, ...ComponentDataTuple<T>]>(
+      this.world,
+      newConfig,
+    );
     this.world.registerQuery(query);
     return query;
   }

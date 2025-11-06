@@ -10,11 +10,11 @@ Latest benchmark results for version 0.8.2 (11/6/2025):
 
 | Benchmark | Operations/sec |
 |-----------|---------------:|
-| Packed Iteration (5 queries) | 12,299 |
-| Simple Iteration | 10,093 |
-| Fragmented Iteration | 25,686 |
-| Entity Cycle | 3,227 |
-| Add/Remove Component | 6,845 |
+| Packed Iteration (5 queries) | 14,526 |
+| Simple Iteration | 11,679 |
+| Fragmented Iteration | 29,070 |
+| Entity Cycle | 3,271 |
+| Add/Remove Component | 7,144 |
 
 ### Benchmark Descriptions
 
@@ -70,6 +70,30 @@ npm test
 
 # Run examples
 npx tsx examples/basic.ts
+
+# Run browser demos
+cd demos/browser
+npm install
+npm run dev
+```
+
+## Browser Demo
+
+Interactive particle system demo showcasing simkit-core capabilities:
+
+- **High-performance physics**: Gravity, velocity, drag, and bounce dynamics
+- **Real-time configuration**: Tweak parameters on the fly to see immediate effects
+- **Interactive spawning**: Click and drag to create thousands of particles
+- **Optimal ECS patterns**: Demonstrates best practices for using simkit-core
+- **Performance testing**: Adjust limits to stress-test your system (up to 10,000 entities)
+
+The demo is optimized to maintain 60fps with thousands of entities and includes a full configuration panel to experiment with physics, appearance, and spawn settings.
+
+To run the demo locally:
+```bash
+cd demos/browser
+npm install
+npm run dev
 ```
 
 ## Features

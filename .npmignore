@@ -1,6 +1,7 @@
 # Source files
 src/
 examples/
+demos/
 coverage/
 
 # Development files

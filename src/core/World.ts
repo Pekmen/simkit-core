@@ -262,7 +262,7 @@ export class World {
 
   query<const T extends readonly ComponentType<unknown>[]>(
     ...components: T
-  ): Query<T extends readonly [] ? unknown[] : ComponentDataTuple<T>> {
+  ): Query<T extends readonly [] ? [] : ComponentDataTuple<T>> {
     let config: QueryConfig = {};
 
     if (components.length > 0) {
@@ -271,9 +271,10 @@ export class World {
       };
     }
 
-    const query = new Query<
-      T extends readonly [] ? unknown[] : ComponentDataTuple<T>
-    >(this, config);
+    const query = new Query<T extends readonly [] ? [] : ComponentDataTuple<T>>(
+      this,
+      config,
+    );
 
     if (
       (config.with?.length ?? 0) > 0 ||

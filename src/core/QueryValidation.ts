@@ -1,4 +1,4 @@
-import type { ComponentType } from "./Component.js";
+import { isValidComponentType, type ComponentType } from "./Component.js";
 import type { QueryConfig } from "./QueryConfig.js";
 
 function validateComponentArray(
@@ -7,11 +7,11 @@ function validateComponentArray(
 ): void {
   const seen = new Set<ComponentType<unknown>>();
   for (const component of components) {
-    if (!component.name || typeof component.name !== "string") {
+    if (!isValidComponentType(component)) {
       throw new Error(
         `QueryValidation: Invalid component in '${arrayName}' constraint. ` +
-          `Component must have a valid 'name' property (string). ` +
-          `Ensure you're using components created with defineComponent(). ` +
+          `Component must be created with defineComponent(). ` +
+          `Expected component with name (string), create (function), and __brand (symbol). ` +
           `Example: const Position = defineComponent("Position", { x: 0, y: 0 })`,
       );
     }
