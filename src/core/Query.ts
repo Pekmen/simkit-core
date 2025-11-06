@@ -110,7 +110,7 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
     }
 
     const entitiesToCheck = this.matcher.getOptimalEntitySet();
-    const componentTypes = this.config.with ?? [];
+    const componentStorages = storages.with;
     const results: [EntityId, ...TData][] = [];
 
     for (const entity of entitiesToCheck) {
@@ -121,8 +121,8 @@ export class Query<TData extends readonly unknown[] = readonly unknown[]> {
       const tuple: unknown[] = [entity];
       let missing = false;
 
-      for (const ct of componentTypes) {
-        const c = this.world.getComponent(entity, ct);
+      for (const storage of componentStorages) {
+        const c = storage.getComponent(entity);
         if (c === undefined) {
           missing = true;
           break;

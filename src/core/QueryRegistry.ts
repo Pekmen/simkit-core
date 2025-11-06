@@ -4,20 +4,26 @@ import type { ComponentType } from "../index.js";
 
 export class QueryRegistry {
   private componentToQueries = new MapSet<ComponentType<unknown>, Query>();
-  private pendingInvalidations = new Set<ComponentType<unknown>>();
-  private batchMode = false;
+
+  private pendingInvalidationsStack: Set<ComponentType<unknown>>[] = [];
 
   startBatch(): void {
-    this.batchMode = true;
-    this.pendingInvalidations.clear();
+    this.pendingInvalidationsStack.push(new Set());
   }
 
   endBatch(): void {
-    this.batchMode = false;
-    for (const componentType of this.pendingInvalidations) {
-      this.invalidateForComponentImmediate(componentType);
+    if (this.pendingInvalidationsStack.length === 0) {
+      throw new Error(
+        "QueryRegistry: endBatch() called without matching startBatch()",
+      );
     }
-    this.pendingInvalidations.clear();
+
+    const pending = this.pendingInvalidationsStack.pop();
+    if (pending && pending.size > 0) {
+      for (const componentType of pending) {
+        this.invalidateForComponentImmediate(componentType);
+      }
+    }
   }
 
   register(
@@ -39,8 +45,13 @@ export class QueryRegistry {
   }
 
   invalidateForComponent(componentType: ComponentType<unknown>): void {
-    if (this.batchMode) {
-      this.pendingInvalidations.add(componentType);
+    if (this.pendingInvalidationsStack.length > 0) {
+      // Add to current batch scope's pending set.
+      const top =
+        this.pendingInvalidationsStack[
+          this.pendingInvalidationsStack.length - 1
+        ];
+      if (top) top.add(componentType);
       return;
     }
 
