@@ -10,14 +10,12 @@ declare global {
   var process: NodeProcess | undefined;
 }
 
-export function assert(condition: boolean, message: string): asserts condition {
-  const isProduction =
-    typeof globalThis.process !== "undefined" &&
-    globalThis.process.env.NODE_ENV === "production";
+const DEV =
+  typeof globalThis.process === "undefined" ||
+  globalThis.process.env.NODE_ENV !== "production";
 
-  if (!isProduction) {
-    if (!condition) {
-      throw new Error(`Assertion failed: ${message}`);
-    }
+export function assert(condition: boolean, message: string): asserts condition {
+  if (DEV && !condition) {
+    throw new Error(`Assertion failed: ${message}`);
   }
 }

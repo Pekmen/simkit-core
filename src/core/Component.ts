@@ -1,5 +1,6 @@
 export interface ComponentType<T> {
   readonly name: string;
+  readonly __brand: unique symbol;
   create(data?: Partial<T>): T;
 }
 
@@ -33,8 +34,25 @@ export function defineComponent<T>(
 
   return {
     name,
+    __brand: Symbol(name) as never,
     create(data: Partial<T> = {}): T {
       return { ...defaultValues, ...data };
     },
   };
+}
+
+export function isValidComponentType(
+  value: unknown,
+): value is ComponentType<unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "name" in value &&
+    typeof (value as Record<string, unknown>).name === "string" &&
+    (value as Record<string, unknown>).name !== "" &&
+    "create" in value &&
+    typeof (value as Record<string, unknown>).create === "function" &&
+    "__brand" in value &&
+    typeof (value as Record<string, unknown>).__brand === "symbol"
+  );
 }
