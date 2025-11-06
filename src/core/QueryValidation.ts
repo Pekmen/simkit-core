@@ -5,7 +5,7 @@ function validateComponentArray(
   components: ComponentType<unknown>[],
   arrayName: string,
 ): void {
-  const seen = new Set<string>();
+  const seen = new Set<ComponentType<unknown>>();
   for (const component of components) {
     if (!component.name || typeof component.name !== "string") {
       throw new Error(
@@ -15,24 +15,24 @@ function validateComponentArray(
           `Example: const Position = defineComponent("Position", { x: 0, y: 0 })`,
       );
     }
-    if (seen.has(component.name)) {
+    if (seen.has(component)) {
       throw new Error(
         `QueryValidation: Duplicate component "${component.name}" in '${arrayName}' constraint. ` +
           `Each component can only appear once per constraint type. ` +
           `Remove the duplicate component from the ${arrayName} array.`,
       );
     }
-    seen.add(component.name);
+    seen.add(component);
   }
 }
 
 function checkComponentConflicts(
   component: ComponentType<unknown>,
-  withSet: Set<string>,
-  withoutSet: Set<string>,
+  withSet: Set<ComponentType<unknown>>,
+  withoutSet: Set<ComponentType<unknown>>,
   currentArrayName: string,
 ): void {
-  if (currentArrayName === "without" && withSet.has(component.name)) {
+  if (currentArrayName === "without" && withSet.has(component)) {
     throw new Error(
       `QueryValidation: Component "${component.name}" cannot be both required (with) and excluded (without). ` +
         `This creates a logical impossibility - an entity cannot both have and not have the same component. ` +
@@ -40,14 +40,14 @@ function checkComponentConflicts(
     );
   }
   if (currentArrayName === "oneOf") {
-    if (withSet.has(component.name)) {
+    if (withSet.has(component)) {
       throw new Error(
         `QueryValidation: Component "${component.name}" cannot be both required (with) and optional (oneOf). ` +
           `If a component is required, it doesn't need to be in oneOf. ` +
           `Remove "${component.name}" from either the 'with' or 'oneOf' constraint.`,
       );
     }
-    if (withoutSet.has(component.name)) {
+    if (withoutSet.has(component)) {
       throw new Error(
         `QueryValidation: Component "${component.name}" cannot be both excluded (without) and optional (oneOf). ` +
           `This creates a logical impossibility - an entity cannot be excluded and optionally included. ` +
@@ -95,13 +95,13 @@ export function validateQueryConfig(config: QueryConfig): void {
     );
   }
 
-  const withSet = new Set<string>();
-  const withoutSet = new Set<string>();
+  const withSet = new Set<ComponentType<unknown>>();
+  const withoutSet = new Set<ComponentType<unknown>>();
 
   if (config.with) {
     validateComponentArray(config.with, "with");
     for (const component of config.with) {
-      withSet.add(component.name);
+      withSet.add(component);
     }
   }
 
@@ -109,7 +109,7 @@ export function validateQueryConfig(config: QueryConfig): void {
     validateComponentArray(config.without, "without");
     for (const component of config.without) {
       checkComponentConflicts(component, withSet, withoutSet, "without");
-      withoutSet.add(component.name);
+      withoutSet.add(component);
     }
   }
 
