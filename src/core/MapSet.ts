@@ -1,10 +1,14 @@
+import { SetPool } from "./SetPool.js";
+
 export class MapSet<K, V> {
   private map = new Map<K, Set<V>>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private static pool = new SetPool<any>();
 
   add(key: K, value: V): void {
     let set = this.map.get(key);
     if (!set) {
-      set = new Set();
+      set = MapSet.pool.acquire();
       this.map.set(key, set);
     }
     set.add(value);
@@ -17,11 +21,16 @@ export class MapSet<K, V> {
     const removed = set.delete(value);
     if (removed && set.size === 0) {
       this.map.delete(key);
+      MapSet.pool.release(set);
     }
     return removed;
   }
 
   removeAll(key: K): boolean {
+    const set = this.map.get(key);
+    if (set) {
+      MapSet.pool.release(set);
+    }
     return this.map.delete(key);
   }
 
@@ -50,6 +59,9 @@ export class MapSet<K, V> {
   }
 
   clear(): void {
+    for (const set of this.map.values()) {
+      MapSet.pool.release(set);
+    }
     this.map.clear();
   }
 

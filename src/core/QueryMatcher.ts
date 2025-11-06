@@ -4,6 +4,12 @@ import type { QueryConfig } from "./QueryConfig.js";
 import type { World } from "./World.js";
 
 export class QueryMatcher {
+  private cachedStorages: {
+    with: ComponentStorage<unknown>[];
+    without: ComponentStorage<unknown>[];
+    oneOf: ComponentStorage<unknown>[];
+  } | null = null;
+
   constructor(
     private world: World,
     private config: QueryConfig,
@@ -14,6 +20,10 @@ export class QueryMatcher {
     without: ComponentStorage<unknown>[];
     oneOf: ComponentStorage<unknown>[];
   } {
+    if (this.cachedStorages !== null) {
+      return this.cachedStorages;
+    }
+
     const storages = {
       with: [] as ComponentStorage<unknown>[],
       without: [] as ComponentStorage<unknown>[],
@@ -48,7 +58,12 @@ export class QueryMatcher {
       }
     }
 
+    this.cachedStorages = storages;
     return storages;
+  }
+
+  invalidateCache(): void {
+    this.cachedStorages = null;
   }
 
   entityMatches(

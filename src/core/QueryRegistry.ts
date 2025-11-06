@@ -4,6 +4,21 @@ import type { ComponentType } from "../index.js";
 
 export class QueryRegistry {
   private componentToQueries = new MapSet<ComponentType<unknown>, Query>();
+  private pendingInvalidations = new Set<ComponentType<unknown>>();
+  private batchMode = false;
+
+  startBatch(): void {
+    this.batchMode = true;
+    this.pendingInvalidations.clear();
+  }
+
+  endBatch(): void {
+    this.batchMode = false;
+    for (const componentType of this.pendingInvalidations) {
+      this.invalidateForComponentImmediate(componentType);
+    }
+    this.pendingInvalidations.clear();
+  }
 
   register(
     query: Query,
@@ -24,6 +39,17 @@ export class QueryRegistry {
   }
 
   invalidateForComponent(componentType: ComponentType<unknown>): void {
+    if (this.batchMode) {
+      this.pendingInvalidations.add(componentType);
+      return;
+    }
+
+    this.invalidateForComponentImmediate(componentType);
+  }
+
+  private invalidateForComponentImmediate(
+    componentType: ComponentType<unknown>,
+  ): void {
     const queries = this.componentToQueries.get(componentType);
     if (queries) {
       for (const query of queries) {

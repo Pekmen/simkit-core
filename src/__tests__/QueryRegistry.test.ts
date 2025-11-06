@@ -203,4 +203,128 @@ describe("QueryRegistry", () => {
       expect(mockFn3).toHaveBeenCalledOnce();
     });
   });
+
+  describe("batch invalidation", () => {
+    it("should defer invalidations while in batch mode", () => {
+      registry.register(mockQuery1, ["Position"]);
+      registry.register(mockQuery2, ["Velocity"]);
+
+      registry.startBatch();
+
+      // These should be deferred
+      registry.invalidateForComponent("Position");
+      registry.invalidateForComponent("Velocity");
+
+      // No queries should be invalidated yet
+      expect(mockFn1).not.toHaveBeenCalled();
+      expect(mockFn2).not.toHaveBeenCalled();
+
+      registry.endBatch();
+
+      // Now both should be invalidated
+      expect(mockFn1).toHaveBeenCalledOnce();
+      expect(mockFn2).toHaveBeenCalledOnce();
+    });
+
+    it("should deduplicate invalidations in batch mode", () => {
+      registry.register(mockQuery1, ["Position"]);
+
+      registry.startBatch();
+
+      // Invalidate same component multiple times
+      registry.invalidateForComponent("Position");
+      registry.invalidateForComponent("Position");
+      registry.invalidateForComponent("Position");
+
+      registry.endBatch();
+
+      // Query should only be invalidated once
+      expect(mockFn1).toHaveBeenCalledOnce();
+    });
+
+    it("should handle nested batch operations correctly", () => {
+      registry.register(mockQuery1, ["Position"]);
+
+      registry.startBatch();
+      registry.invalidateForComponent("Position");
+
+      // Starting a new batch should clear pending invalidations
+      registry.startBatch();
+      registry.invalidateForComponent("Position");
+
+      registry.endBatch();
+
+      // Should only process the second batch
+      expect(mockFn1).toHaveBeenCalledOnce();
+    });
+
+    it("should handle empty batch gracefully", () => {
+      registry.register(mockQuery1, ["Position"]);
+
+      registry.startBatch();
+      // No invalidations
+      registry.endBatch();
+
+      expect(mockFn1).not.toHaveBeenCalled();
+    });
+
+    it("should process multiple different component types in batch", () => {
+      registry.register(mockQuery1, ["Position"]);
+      registry.register(mockQuery2, ["Velocity"]);
+      registry.register(mockQuery3, ["Health"]);
+
+      registry.startBatch();
+      registry.invalidateForComponent("Position");
+      registry.invalidateForComponent("Velocity");
+      registry.invalidateForComponent("Health");
+      registry.endBatch();
+
+      expect(mockFn1).toHaveBeenCalledOnce();
+      expect(mockFn2).toHaveBeenCalledOnce();
+      expect(mockFn3).toHaveBeenCalledOnce();
+    });
+
+    it("should handle batch mode with non-existent components", () => {
+      registry.register(mockQuery1, ["Position"]);
+
+      registry.startBatch();
+      registry.invalidateForComponent("Position");
+      registry.invalidateForComponent("NonExistent");
+      registry.endBatch();
+
+      // Should not throw and should invalidate existing query
+      expect(mockFn1).toHaveBeenCalledOnce();
+    });
+
+    it("should work correctly after batch mode ends", () => {
+      registry.register(mockQuery1, ["Position"]);
+
+      // Use batch mode
+      registry.startBatch();
+      registry.invalidateForComponent("Position");
+      registry.endBatch();
+
+      expect(mockFn1).toHaveBeenCalledOnce();
+
+      // Clear mock for next test
+      vi.clearAllMocks();
+
+      // Normal invalidation should work after batch mode
+      registry.invalidateForComponent("Position");
+      expect(mockFn1).toHaveBeenCalledOnce();
+    });
+
+    it("should handle queries registered for multiple components in batch", () => {
+      // Query1 tracks both Position and Velocity
+      registry.register(mockQuery1, ["Position", "Velocity"]);
+
+      registry.startBatch();
+      registry.invalidateForComponent("Position");
+      registry.invalidateForComponent("Velocity");
+      registry.endBatch();
+
+      // Query should be invalidated twice (once for each component)
+      expect(mockFn1).toHaveBeenCalledTimes(2);
+    });
+  });
 });
