@@ -42,7 +42,8 @@
     "coverage": "vitest run --coverage",
     "benchmark": "node --expose-gc benchmarks/local/run.js",
     "benchmark:update-readme": "node benchmarks/update-readme.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "demo": "vite --config demo/vite.config.js"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -64,6 +65,7 @@
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.42.0",
+    "vite": "^7.1.5",
     "vitest": "^3.2.4"
   }
 }

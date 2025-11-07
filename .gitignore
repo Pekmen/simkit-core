@@ -29,5 +29,5 @@ benchmarks/local/src/
 *.sln
 *.sw?
 
-#AI
+# AI
 CLAUDE.md

@@ -44,6 +44,8 @@ export default defineConfig([
       "@typescript-eslint/no-unsafe-call": "error",
       "@typescript-eslint/no-unsafe-member-access": "error",
       "@typescript-eslint/no-unsafe-return": "error",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/restrict-template-expressions": "off",
     },
   },
   {
